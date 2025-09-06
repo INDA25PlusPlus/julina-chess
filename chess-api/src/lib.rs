@@ -1,15 +1,15 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod bitboards; // multiple source files https://www.youtube.com/watch?v=lx5r7yzl1Ps
+
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
+    use crate::bitboards;
 
     #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    fn test_print_board(){
+
+        bitboards::print_board();
     }
 
 }
