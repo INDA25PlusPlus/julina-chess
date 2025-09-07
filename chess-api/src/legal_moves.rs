@@ -1,4 +1,5 @@
 use crate::BOARD;
+use crate::MOVE;
 
 // prevent moving outside 8x8-board
 pub fn is_valid_move(cur_square: i64, row_delta: i64, col_delta: i64) -> bool {
@@ -160,5 +161,56 @@ pub fn bishop_moves(square: i64) -> u64 {
 pub fn queen_moves(square: i64) -> u64 { // combine bishop&rook moves
 
     return rook_moves(square) | bishop_moves(square);
-    
+
+}
+
+
+pub fn pawn_moves(square: i64) ->u64 {
+
+    let mut targeted_squares: u64 = 0u64;
+    let to_move = *MOVE.lock().unwrap(); // dereference ()
+    let board = BOARD.lock().unwrap();
+
+    if to_move == 0u8 { // white's move
+
+        if 8 <= square && square <= 15 { // second rank --> allow two steps
+
+            if is_valid_move(square, 2, 0) {
+                
+                if ((board.white_occupied | board.black_occupied) & 1<<square+8 == 0) && ((board.white_occupied | board.black_occupied) & 1<<square+16 == 0) {
+                    targeted_squares |= 1<<square+16;
+                }
+            }
+        }
+
+        if is_valid_move(square, 1, 0) {
+
+            if (board.white_occupied | board.black_occupied) & 1<<square+8 == 0 {
+                targeted_squares |= 1<<square+8;
+            }
+        }
+    }
+
+    else if to_move == 1 { // black's move
+
+        if 48 <= square && square <= 55 {
+
+            if is_valid_move(square, -2, 0) {
+                if ((board.white_occupied | board.black_occupied) & 1<<square-8 == 0) && ((board.white_occupied | board.black_occupied) & 1<<square-16 == 0) {
+                    targeted_squares |= 1<<square-16;
+                }
+            }
+        }
+        
+        if is_valid_move(square, -1, 0) {
+
+            if (board.white_occupied | board.black_occupied) & 1<<square-8 == 0 {
+                targeted_squares |= 1<<square-8;
+            }
+
+            }
+
+    }
+
+    return targeted_squares;
 }

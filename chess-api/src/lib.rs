@@ -12,7 +12,7 @@ pub static BOARD: Lazy<Mutex<Board>> = Lazy::new(|| {
 });
 
 pub static MOVE: Lazy<Mutex<u8>> = Lazy::new(|| { // 0: whites move, 1: blacks move
-    Mutex::new(0)
+    Mutex::new(0u8)
 });
 
 #[allow(dead_code)] // (only used in tests)
@@ -47,13 +47,21 @@ mod tests {
     }
 
 
-    #[test]
-    fn test_bishop_moves() {
+    // #[test]
+    // fn test_bishop_moves() {
 
-        print!("{:b}", legal_moves::bishop_moves(0));
+    //     print!("{:b}", legal_moves::bishop_moves(0));
+    //     print!("{}", "\n");
+    //     dbg_print_board(legal_moves::bishop_moves(8));
+    //     print!("{}", "\n");
+    // }
+
+    #[test]
+    fn test_pawn_moves() {
+
+        dbg_print_board(legal_moves::pawn_moves(16));
         print!("{}", "\n");
-        dbg_print_board(legal_moves::bishop_moves(8));
+        dbg_print_board(legal_moves::pawn_moves(8));
         print!("{}", "\n");
     }
-
 }
