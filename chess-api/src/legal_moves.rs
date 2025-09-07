@@ -1,8 +1,7 @@
 use crate::BOARD;
 use crate::MOVE;
 
-// prevent moving outside 8x8-board
-pub fn is_valid_move(cur_square: i64, row_delta: i64, col_delta: i64) -> bool {
+pub fn is_valid_move(cur_square: i64, row_delta: i64, col_delta: i64) -> bool { // prevent moving outside 8x8-board
 
     if cur_square + 8*row_delta + col_delta < 0 || cur_square + 8*row_delta + col_delta > 63 {
         return false;
@@ -73,6 +72,7 @@ pub fn king_moves(square: i64) -> u64 { // add more checks later (for check, che
 pub fn rook_moves(square: i64) -> u64{
 
     let board = BOARD.lock().unwrap();
+    let to_move = *MOVE.lock().unwrap();
 
     let mut targeted_squares: u64 = 0u64;
 
@@ -92,11 +92,23 @@ pub fn rook_moves(square: i64) -> u64{
         while n < 8 {
 
             if is_valid_move(square, row_delta*n, col_delta*n) {
-                // FIX: ADD MOVE DEPENDING ON MOVE/COLOR (if the piece can be captured, or if it's your own piece)
+        
                 if (board.black_occupied | board.white_occupied) & (1 << square+row_delta*8*n+col_delta*n) == 0 { // not occupied
 
                     targeted_squares |= 1 << square+row_delta*8*n+col_delta*n;
-                }   
+                }  
+                
+                // If the occupied square is of the opponent's color, add it to targeted squares
+                else if to_move == 0 && (board.black_occupied & (1 << square+row_delta*8*n+col_delta*n)) != 0 { 
+                   targeted_squares |= 1 << square+row_delta*8*n+col_delta*n;
+                   break;
+                }
+
+                else if to_move == 1 && (board.white_occupied & (1 << square+row_delta*8*n+col_delta*n)) != 0 { 
+                   targeted_squares |= 1 << square+row_delta*8*n+col_delta*n;
+                   break;
+                }
+
                 else {
                     break;
                 }
@@ -207,8 +219,7 @@ pub fn pawn_moves(square: i64) ->u64 {
             if (board.white_occupied | board.black_occupied) & 1<<square-8 == 0 {
                 targeted_squares |= 1<<square-8;
             }
-
-            }
+        }
 
     }
 

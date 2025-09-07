@@ -57,11 +57,20 @@ mod tests {
     // }
 
     #[test]
-    fn test_pawn_moves() {
+    fn test_rook_moves() {
 
-        dbg_print_board(legal_moves::pawn_moves(16));
+        print!("{:b}", legal_moves::rook_moves(0));
         print!("{}", "\n");
-        dbg_print_board(legal_moves::pawn_moves(8));
+        dbg_print_board(legal_moves::rook_moves(8));
         print!("{}", "\n");
     }
+
+    // #[test]
+    // fn test_pawn_moves() {
+
+    //     dbg_print_board(legal_moves::pawn_moves(16));
+    //     print!("{}", "\n");
+    //     dbg_print_board(legal_moves::pawn_moves(8));
+    //     print!("{}", "\n");
+    // }
 }
