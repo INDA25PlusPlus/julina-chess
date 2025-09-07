@@ -11,7 +11,9 @@ pub static BOARD: Lazy<Mutex<Board>> = Lazy::new(|| {
     Mutex::new(Board::new())
 });
 
-
+pub static MOVE: Lazy<Mutex<u8>> = Lazy::new(|| { // 0: whites move, 1: blacks move
+    Mutex::new(0)
+});
 
 #[allow(dead_code)] // (only used in tests)
 fn dbg_print_board(bb: u64) { // for debugging and testing
@@ -21,15 +23,12 @@ fn dbg_print_board(bb: u64) { // for debugging and testing
     a8 b8 ... h8
     a7 b7 ... h7*/ 
 
-
     for i in (0..8).rev() { // print top to down
 
         for j in 0..8 { // print left to right
             print!("{} ", (bb >> i*8+j) & 1);
         }
         print!("{}", "\n\n");
-    
-
     }
 }
 
