@@ -11,31 +11,49 @@ pub static BOARD: Lazy<Mutex<Board>> = Lazy::new(|| {
     Mutex::new(Board::new())
 });
 
+
+
+#[allow(dead_code)] // (only used in tests)
+fn dbg_print_board(bb: u64) { // for debugging and testing
+
+     // print the board
+    /* The first square to be printed should be a8, so we get
+    a8 b8 ... h8
+    a7 b7 ... h7*/ 
+
+
+    for i in (0..8).rev() { // print top to down
+
+        for j in 0..8 { // print left to right
+            print!("{} ", (bb >> i*8+j) & 1);
+        }
+        print!("{}", "\n\n");
+    
+
+    }
+}
+
+
+
 #[cfg(test)]
 mod tests {
     // use super::*;
-    use crate::{bitboards, legal_moves};
+    use crate::{bitboards, dbg_print_board, legal_moves};
     
 
     #[test]
     fn test_print_board(){
 
-        bitboards::print_board();
+        bitboards::print_start_configuration();
     }
 
-    #[test]
-    fn test_knight_moves(){
-
-        print!("{:b}", legal_moves::knight_moves(0));
-        print!("{}", "\n");
-    }
 
     #[test]
-    fn test_rook_moves() {
+    fn test_bishop_moves() {
 
-        print!("{:b}", legal_moves::rook_moves(0));
+        print!("{:b}", legal_moves::bishop_moves(0));
         print!("{}", "\n");
-        print!("{:b}", legal_moves::rook_moves(8));
+        dbg_print_board(legal_moves::bishop_moves(8));
         print!("{}", "\n");
     }
 
