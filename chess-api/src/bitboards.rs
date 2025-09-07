@@ -86,7 +86,7 @@ impl Board { // https://doc.rust-lang.org/stable/book/ch05-03-method-syntax.html
 
 // FOLLOWING CODE ONLY USED TO PRINT (VISUALIZE) THE BOARD
 
-pub fn print_board() {
+pub fn print_start_configuration() {
 
 
     let board: Board = Board::new(); // access different bitboards using eg. board.white_pawns
