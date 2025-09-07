@@ -8,7 +8,7 @@ use bitboards::Board;
 
 // GLOBAL STATES
 pub static BOARD: Lazy<Mutex<Board>> = Lazy::new(|| {
-    Mutex::new(Board::new());
+    Mutex::new(Board::new())
 });
 
 #[cfg(test)]
@@ -27,6 +27,15 @@ mod tests {
     fn test_knight_moves(){
 
         print!("{:b}", legal_moves::knight_moves(0));
+        print!("{}", "\n");
+    }
+
+    #[test]
+    fn test_rook_moves() {
+
+        print!("{:b}", legal_moves::rook_moves(0));
+        print!("{}", "\n");
+        print!("{:b}", legal_moves::rook_moves(8));
         print!("{}", "\n");
     }
 

@@ -69,9 +69,9 @@ pub fn king_moves(square: i64) -> u64 { // add more checks later (for check, che
 }
 
 
-pub fn rook_moves(square: i64) {
+pub fn rook_moves(square: i64) -> u64{
 
-    let mut board = BOARD.lock().unwrap();
+    let board = BOARD.lock().unwrap();
 
     let mut targeted_squares: u64 = 0u64;
 
@@ -86,7 +86,7 @@ pub fn rook_moves(square: i64) {
 
     for (row_delta, col_delta) in dirs {
     
-        let n = 1; // num steps in direction (row_delta, col_delta)
+        let mut n = 1; // num steps in direction (row_delta, col_delta)
 
         while n < 8 {
 
