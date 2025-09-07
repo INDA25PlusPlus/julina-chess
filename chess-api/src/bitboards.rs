@@ -33,6 +33,8 @@ const BLACK_BISHOP_INIT: u64 = 0b00100100000000000000000000000000000000000000000
 const BLACK_QUEEN_INIT: u64 = 0b0000100000000000000000000000000000000000000000000000000000000000;
 const BLACK_KING_INIT: u64 = 0b0001000000000000000000000000000000000000000000000000000000000000;
 
+const WHITE_OCCUPIED: u64 = 0b0000000000000000000000000000000000000000000000001111111111111111;
+const BLACK_OCCUPIED: u64 = 0b1111111111111111000000000000000000000000000000000000000000000000;
 
 
 pub struct Board {
@@ -50,6 +52,9 @@ pub struct Board {
     pub black_bishops: u64,
     pub black_queens: u64,
     pub black_king: u64,
+
+    pub white_occupied: u64,
+    pub black_occupied: u64,
 }
 
 
@@ -69,6 +74,9 @@ impl Board { // https://doc.rust-lang.org/stable/book/ch05-03-method-syntax.html
             black_bishops: BLACK_BISHOP_INIT,
             black_queens: BLACK_QUEEN_INIT,
             black_king: BLACK_KING_INIT,
+
+            white_occupied: WHITE_OCCUPIED,
+            black_occupied: BLACK_OCCUPIED,
         }
     }
 }
