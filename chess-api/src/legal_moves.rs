@@ -155,3 +155,10 @@ pub fn bishop_moves(square: i64) -> u64 {
 
     return targeted_squares;
 }
+
+
+pub fn queen_moves(square: i64) -> u64 { // combine bishop&rook moves
+
+    return rook_moves(square) | bishop_moves(square);
+    
+}
