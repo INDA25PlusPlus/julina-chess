@@ -1,3 +1,7 @@
+/*
+For each piece, a function returning targeted squares from a squared passed in
+*/
+
 use crate::BOARD;
 use crate::MOVE;
 
