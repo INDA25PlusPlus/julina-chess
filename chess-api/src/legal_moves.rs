@@ -113,3 +113,45 @@ pub fn rook_moves(square: i64) -> u64{
         
 
 }
+
+
+pub fn bishop_moves(square: i64) -> u64 {
+
+    let board = BOARD.lock().unwrap();
+
+    let mut targeted_squares: u64 = 0u64;
+
+    let dirs: [(i64, i64); 4] = [
+        (1, -1), // up, left
+        (1, 1),
+        (-1, -1),
+        (-1, 1)
+    ];
+
+
+    for (row_delta, col_delta) in dirs {
+
+        let mut n = 1;
+
+        while n < 8 {
+
+            if is_valid_move(square, row_delta*n, col_delta*n) {
+
+                if (board.white_occupied | board.black_occupied) & (1<<square+8*n*row_delta+n*col_delta) == 0 { // not occupied
+                    targeted_squares |= 1<<square+8*n*row_delta+col_delta*n;
+                }
+                else {
+                    break;
+                }
+            }
+            else {
+                break;
+            }
+
+            n += 1;
+        }
+    }
+
+
+    return targeted_squares;
+}
