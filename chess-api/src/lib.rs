@@ -2,6 +2,15 @@ pub mod bitboards; // multiple source files https://www.youtube.com/watch?v=lx5r
 
 pub mod legal_moves;
 
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
+use bitboards::Board;
+
+// GLOBAL STATES
+pub static BOARD: Lazy<Mutex<Board>> = Lazy::new(|| {
+    Mutex::new(Board::new());
+});
+
 #[cfg(test)]
 mod tests {
     // use super::*;
