@@ -1,5 +1,16 @@
 /*
-For each piece, a function returning targeted squares from a squared passed in
+For each piece, exists a function returning targeted squares from a square (passed in as parameter).
+
+- is_valid_move() checks that a target square is within board bounds and prevents overflow etc. when performing bit shifts
+
+- BOARD is a global instance of struct Board definied in bitboards.rs
+- `BOARD.white_occupied` and `BOARD.black_occupied` track which squares are occupied by each color.
+- Used to determine if a move is legal (cannot move to a square already occupied by own piece, allow moving to a square
+occupied by opponent's piece (representing a capture)).
+
+- MOVE is a global state variable indicating whose turn it is.
+- 0 = white to move, 1 = black to move
+- used to determine which pieces belong to opponent
 */
 
 use crate::BOARD;
