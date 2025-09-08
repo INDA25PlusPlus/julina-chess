@@ -135,6 +135,7 @@ pub fn rook_moves(square: i64) -> u64{
 pub fn bishop_moves(square: i64) -> u64 {
 
     let board = BOARD.lock().unwrap();
+    let to_move = *MOVE.lock().unwrap();
 
     let mut targeted_squares: u64 = 0u64;
 
@@ -154,9 +155,24 @@ pub fn bishop_moves(square: i64) -> u64 {
 
             if is_valid_move(square, row_delta*n, col_delta*n) {
 
-                if (board.white_occupied | board.black_occupied) & (1<<square+8*n*row_delta+n*col_delta) == 0 { // not occupied
-                    targeted_squares |= 1<<square+8*n*row_delta+col_delta*n;
+                let new_square: i32 = 1<<square+8*n*row_delta+n*col_delta;
+
+                
+                if (board.white_occupied | board.black_occupied) & (1<<new_square) == 0 { // not occupied
+                    targeted_squares |= 1<<new_square;
                 }
+
+                // If the occupied square is of the opponent's color, add it to targeted squares
+                else if to_move == 0 && (board.black_occupied & (1<<new_square) != 0) { // white to move, can caputre black's piece
+                    targeted_squares |= 1<<new_square;
+                    break;
+                }
+
+                else if to_move == 1 && (board.white_occupied & (1<<new_square) != 0) {
+                    targeted_squares |= 1<<new_square;
+                    break;
+                }
+
                 else {
                     break;
                 }
@@ -168,8 +184,6 @@ pub fn bishop_moves(square: i64) -> u64 {
             n += 1;
         }
     }
-
-
     return targeted_squares;
 }
 
