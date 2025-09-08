@@ -1,6 +1,7 @@
 pub mod bitboards; // multiple source files https://www.youtube.com/watch?v=lx5r7yzl1Ps
 
 pub mod legal_moves;
+pub mod perform_moves;
 
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
