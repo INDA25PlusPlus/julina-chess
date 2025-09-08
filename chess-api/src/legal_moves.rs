@@ -13,8 +13,16 @@ occupied by opponent's piece (representing a capture)).
 - used to determine which pieces belong to opponent
 */
 
+
+
 use crate::BOARD;
 use crate::MOVE;
+
+// Masking: https://www.chessprogramming.org/Square_Mapping_Considerations
+const FILE_A: u64 = 0b100000001000000010000000100000001000000010000000100000001;
+const FILE_H: u64 = 0b1000000010000000100000001000000010000000100000001000000010000000;
+const FILE_B: u64 = 0b1000000010000000100000001000000010000000100000001000000010;
+const FILE_G: u64 = 0b100000001000000010000000100000001000000010000000100000001000000;
 
 pub fn is_valid_move(cur_square: i64, row_delta: i64, col_delta: i64) -> bool { // prevent moving outside 8x8-board
 
@@ -27,38 +35,33 @@ pub fn is_valid_move(cur_square: i64, row_delta: i64, col_delta: i64) -> bool { 
     return true;
 }
 
-pub fn knight_moves(square: i64) -> u64 {
+pub fn knight_moves(square: i64) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
 
     let mut targeted_squares: u64 = 0u64;
     let board = BOARD.lock().unwrap();
     let to_move = *MOVE.lock().unwrap();
 
+    let pos = 1 << square; // knight bitboard
 
-    // row and column deltas
-    let deltas: [(i64, i64); 8] = [
-        (2, -1), // two rows up, one left
-        (2, 1), 
-        (1, -2),
-        (1, 2),
-        (-1, -2),
-        (-1, 2),
-        (-2, -1),
-        (-2, 1)
-    ];
+    let not_a_file = !FILE_A;
+    let not_ab_file = !(FILE_A | FILE_B);
+    let not_h_file = !FILE_H;
+    let not_gh_file = !(FILE_G | FILE_H);
 
-    for (row_delta, col_delta) in deltas {
-        if is_valid_move(square, row_delta, col_delta) {
+    targeted_squares |= (pos & not_h_file) << 17; // up twice, right
+    targeted_squares |= (pos & not_gh_file) << 10; // up once, right twice
+    targeted_squares |= (pos & not_gh_file) >> 6; // down once, right twice
+    targeted_squares |= (pos & not_h_file) >> 15;
+    targeted_squares |= (pos & not_a_file) << 15;
+    targeted_squares |= (pos & not_ab_file) << 6;
+    targeted_squares |= (pos & not_ab_file) >> 10;
+    targeted_squares |= (pos & not_a_file) >> 17;
 
-            let new_square = square+8*row_delta+col_delta;
 
-            // check occupation of square
-            if to_move == 0 && (board.white_occupied & 1<<new_square == 0) {
-                targeted_squares |= 1<<new_square;
-            }
-            else if to_move == 1 && (board.black_occupied & 1<<new_square == 0) {
-                targeted_squares |= 1<<new_square;
-            }
-        }
+    if to_move == 0 {
+        targeted_squares &= !board.white_occupied;
+    } else {
+        targeted_squares &= !board.black_occupied;
     }
 
     return targeted_squares;
