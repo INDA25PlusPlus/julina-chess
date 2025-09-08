@@ -19,6 +19,8 @@ pub fn is_valid_move(cur_square: i64, row_delta: i64, col_delta: i64) -> bool { 
 pub fn knight_moves(square: i64) -> u64 {
 
     let mut targeted_squares: u64 = 0u64;
+    let board = BOARD.lock().unwrap();
+    let to_move = *MOVE.lock().unwrap();
 
 
     // row and column deltas
@@ -35,7 +37,16 @@ pub fn knight_moves(square: i64) -> u64 {
 
     for (row_delta, col_delta) in deltas {
         if is_valid_move(square, row_delta, col_delta) {
-            targeted_squares |= 1u64<<(square+8*row_delta+col_delta);
+
+            let new_square = square+8*row_delta+col_delta;
+
+            // check occupation of square
+            if to_move == 0 && (board.white_occupied & 1<<new_square == 0) {
+                targeted_squares |= 1<<new_square;
+            }
+            else if to_move == 1 && (board.black_occupied & 1<<new_square == 0) {
+                targeted_squares |= 1<<new_square;
+            }
         }
     }
 
