@@ -14,7 +14,6 @@ occupied by opponent's piece (representing a capture)).
 */
 
 
-
 use crate::BOARD;
 use crate::MOVE;
 
@@ -23,6 +22,9 @@ const FILE_A: u64 = 0b100000001000000010000000100000001000000010000000100000001;
 const FILE_H: u64 = 0b1000000010000000100000001000000010000000100000001000000010000000;
 const FILE_B: u64 = 0b1000000010000000100000001000000010000000100000001000000010;
 const FILE_G: u64 = 0b100000001000000010000000100000001000000010000000100000001000000;
+
+const SECOND_RANK: u64 = 0b1111111100000000; 
+const SEVENTH_RANK: u64 = 0xFF000000000000;
 
 pub fn is_valid_move(cur_square: i64, row_delta: i64, col_delta: i64) -> bool { // prevent moving outside 8x8-board
 
@@ -228,45 +230,29 @@ pub fn pawn_moves(square: i64) ->u64 {
     let to_move = *MOVE.lock().unwrap(); // dereference ()
     let board = BOARD.lock().unwrap();
 
-    // conditionally assigning: https://stackoverflow.com/questions/76794659/conditionally-assigning-to-a-variable-using-if
-    let (step, lo, hi, opponent_occupied) = if to_move == 0 { // white to move
-            (1, 8, 15, board.black_occupied)
-        } else { // blakc to move
-            (-1, 48, 55, board.white_occupied)
-        };
+    let pos = 1 << square;
+    let unoccupied = !(board.white_occupied | board.black_occupied);
 
 
-    // two steps
-    if lo <= square && square <= hi { // on second(seventh) rank, allow two steps
+    if to_move == 0 {
 
-        if is_valid_move(square, step*2, 0) {
-            if ((board.white_occupied | board.black_occupied) & 1<<square+8*step == 0) && ((board.white_occupied | board.black_occupied) & 1<<square+16*step == 0) {
-                    targeted_squares |= 1<<square+16*step;
-                }
-        } 
-    }
-    // one step
-    if is_valid_move(square, step, 0) {
+        let one_step = pos << 8 & unoccupied;
+        let two_steps = (((SECOND_RANK << 8) & one_step) << 8) & unoccupied;
+        let capture_left = board.black_occupied & ((pos&!FILE_A) << 8 - 1);
+        let capture_right = board.black_occupied & ((pos&!FILE_H) << 8 + 1);
 
-        if (board.white_occupied | board.black_occupied) & 1<<square+8*step == 0 {
-            targeted_squares |= 1<<square+8*step;
-        }
-    }
+        targeted_squares |= one_step | two_steps | capture_left | capture_right;
+     
+    } else {
 
-    // captures
-    // left
-    if is_valid_move(square, step, -1) {
+        let one_step = pos >> 8 & unoccupied;
+        let two_steps = (((SEVENTH_RANK >> 8) & one_step) >> 8) & unoccupied;
+        let capture_left = board.black_occupied & ((pos&!FILE_A) >> 8 - 1);
+        let capture_right = board.black_occupied & ((pos&!FILE_H) >> 8 + 1);
 
-        if opponent_occupied & 1<<square+8*step-1 != 0 {
-            targeted_squares |= 1<<square+8*step-1;
-        }
-    }
-    // right
-    if is_valid_move(square, step, 1) {
-        if opponent_occupied & 1<<square+8*step+1 != 0 {
-            targeted_squares |= 1<<square+8*step+1;
-        }
-    }
+        targeted_squares |= one_step | two_steps | capture_left | capture_right;
+        
+    };
 
     return targeted_squares;
 

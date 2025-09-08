@@ -12,7 +12,7 @@ pub static BOARD: Lazy<Mutex<Board>> = Lazy::new(|| {
 });
 
 pub static MOVE: Lazy<Mutex<u8>> = Lazy::new(|| { // 0: whites move, 1: blacks move
-    Mutex::new(0u8)
+    Mutex::new(0)
 });
 
 #[allow(dead_code)] // (only used in tests)
@@ -56,21 +56,21 @@ mod tests {
     //     print!("{}", "\n");
     // }
 
-    #[test]
-    fn test_rook_moves() {
-
-        print!("{:b}", legal_moves::rook_moves(0));
-        print!("{}", "\n");
-        dbg_print_board(legal_moves::rook_moves(8));
-        print!("{}", "\n");
-    }
-
     // #[test]
-    // fn test_pawn_moves() {
+    // fn test_rook_moves() {
 
-    //     dbg_print_board(legal_moves::pawn_moves(16));
+    //     print!("{:b}", legal_moves::rook_moves(0));
     //     print!("{}", "\n");
-    //     dbg_print_board(legal_moves::pawn_moves(8));
+    //     dbg_print_board(legal_moves::rook_moves(8));
     //     print!("{}", "\n");
     // }
+
+    #[test]
+    fn test_pawn_moves() {
+
+        dbg_print_board(legal_moves::pawn_moves(12));
+        print!("{}", "\n");
+        dbg_print_board(legal_moves::pawn_moves(60));
+        print!("{}", "\n");
+    }
 }
