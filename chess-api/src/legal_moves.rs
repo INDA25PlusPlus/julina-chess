@@ -75,27 +75,18 @@ pub fn knight_moves(square: i64) -> u64 { // masking inspo: https://www.chesspro
 pub fn king_moves(square: i64) -> u64 { // add more checks later (for check, checkmate etc.)
 
     let mut targeted_squares: u64 = 0u64;
+    let pos = 1 << square;
 
-    let deltas: [(i64, i64); 8] = [
-        (1, -1),
-        (1, 0),
-        (1, 1),
-        (0, -1),
-        (0, 1),
-        (-1, -1),
-        (-1, 0),
-        (-1, 1)
-    ];
-
-    for (row_delta, col_delta) in deltas {
-        if is_valid_move(square, row_delta, col_delta) {
-            targeted_squares |= 1<<(square+row_delta*8+col_delta);
-
-        }
-    }
+    targeted_squares |= (pos & !FILE_A) << 7;
+    targeted_squares |= (pos << 8);
+    targeted_squares |= (pos & !FILE_H) << 9;
+    targeted_squares |= (pos & !FILE_A) >> 1;
+    targeted_squares |= (pos & !FILE_H) << 1;
+    targeted_squares |= (pos & !FILE_A) >> 9;
+    targeted_squares |= (pos >> 8);
+    targeted_squares |= (pos & !FILE_H) >> 7;
 
     return targeted_squares;
-
 
 }
 
