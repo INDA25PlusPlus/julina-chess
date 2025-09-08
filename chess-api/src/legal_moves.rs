@@ -107,20 +107,22 @@ pub fn rook_moves(square: i64) -> u64{
         while n < 8 {
 
             if is_valid_move(square, row_delta*n, col_delta*n) {
-        
-                if (board.black_occupied | board.white_occupied) & (1 << square+row_delta*8*n+col_delta*n) == 0 { // not occupied
 
-                    targeted_squares |= 1 << square+row_delta*8*n+col_delta*n;
+                let new_square = square+row_delta*8*n+col_delta*n;
+        
+                if (board.black_occupied | board.white_occupied) & (1 << new_square) == 0 { // not occupied
+
+                    targeted_squares |= 1 << new_square;
                 }  
                 
                 // If the occupied square is of the opponent's color, add it to targeted squares
                 else if to_move == 0 && (board.black_occupied & (1 << square+row_delta*8*n+col_delta*n)) != 0 { 
-                   targeted_squares |= 1 << square+row_delta*8*n+col_delta*n;
+                   targeted_squares |= 1 << new_square;
                    break;
                 }
 
                 else if to_move == 1 && (board.white_occupied & (1 << square+row_delta*8*n+col_delta*n)) != 0 { 
-                   targeted_squares |= 1 << square+row_delta*8*n+col_delta*n;
+                   targeted_squares |= 1 << new_square;
                    break;
                 }
 
@@ -212,45 +214,46 @@ pub fn pawn_moves(square: i64) ->u64 {
     let to_move = *MOVE.lock().unwrap(); // dereference ()
     let board = BOARD.lock().unwrap();
 
-    if to_move == 0u8 { // white's move
+    // conditionally assigning: https://stackoverflow.com/questions/76794659/conditionally-assigning-to-a-variable-using-if
+    let (step, lo, hi, opponent_occupied) = if to_move == 0 { // white to move
+            (1, 8, 15, board.black_occupied)
+        } else { // blakc to move
+            (-1, 48, 55, board.white_occupied)
+        };
 
-        if 8 <= square && square <= 15 { // second rank --> allow two steps
 
-            if is_valid_move(square, 2, 0) {
-                
-                if ((board.white_occupied | board.black_occupied) & 1<<square+8 == 0) && ((board.white_occupied | board.black_occupied) & 1<<square+16 == 0) {
-                    targeted_squares |= 1<<square+16;
+    // two steps
+    if lo <= square && square <= hi { // on second(seventh) rank, allow two steps
+
+        if is_valid_move(square, step*2, 0) {
+            if ((board.white_occupied | board.black_occupied) & 1<<square+8*step == 0) && ((board.white_occupied | board.black_occupied) & 1<<square+16*step == 0) {
+                    targeted_squares |= 1<<square+16*step;
                 }
-            }
-        }
+        } 
+    }
+    // one step
+    if is_valid_move(square, step, 0) {
 
-        if is_valid_move(square, 1, 0) {
-
-            if (board.white_occupied | board.black_occupied) & 1<<square+8 == 0 {
-                targeted_squares |= 1<<square+8;
-            }
+        if (board.white_occupied | board.black_occupied) & 1<<square+8*step == 0 {
+            targeted_squares |= 1<<square+8*step;
         }
     }
 
-    else if to_move == 1 { // black's move
+    // captures
+    // left
+    if is_valid_move(square, step, -1) {
 
-        if 48 <= square && square <= 55 {
-
-            if is_valid_move(square, -2, 0) {
-                if ((board.white_occupied | board.black_occupied) & 1<<square-8 == 0) && ((board.white_occupied | board.black_occupied) & 1<<square-16 == 0) {
-                    targeted_squares |= 1<<square-16;
-                }
-            }
+        if opponent_occupied & 1<<square+8*step-1 != 0 {
+            targeted_squares |= 1<<square+8*step-1;
         }
-        
-        if is_valid_move(square, -1, 0) {
-
-            if (board.white_occupied | board.black_occupied) & 1<<square-8 == 0 {
-                targeted_squares |= 1<<square-8;
-            }
+    }
+    // right
+    if is_valid_move(square, step, 1) {
+        if opponent_occupied & 1<<square+8*step+1 != 0 {
+            targeted_squares |= 1<<square+8*step+1;
         }
-
     }
 
     return targeted_squares;
+
 }
