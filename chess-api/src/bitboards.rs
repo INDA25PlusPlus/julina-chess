@@ -16,6 +16,8 @@ The occupation of the squares is initialized based on the starting position (con
 
 */
 
+use crate:: BOARD;
+
 
 // configuration of pieces in starting position, used to initialize Board struct
 
@@ -86,10 +88,10 @@ impl Board { // https://doc.rust-lang.org/stable/book/ch05-03-method-syntax.html
 
 // FOLLOWING CODE ONLY USED TO PRINT (VISUALIZE) THE BOARD
 
-pub fn print_start_configuration() {
+pub fn print_board() {
 
 
-    let board: Board = Board::new(); // access different bitboards using eg. board.white_pawns
+    let board = BOARD.lock().unwrap(); // global board, access different bitboards using eg. board.white_pawns
 
 
     use std::collections::HashMap;
