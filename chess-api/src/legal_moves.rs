@@ -50,7 +50,7 @@ pub fn knight_moves(square: i8) -> u64 { // masking inspo: https://www.chessprog
     let not_h_file = !FILE_H;
     let not_gh_file = !(FILE_G | FILE_H);
 
-    targeted_squares |= (pos & not_h_file) << 17; // up twice, right
+    targeted_squares |= (pos & not_h_file) << 17; // up twice, right once
     targeted_squares |= (pos & not_gh_file) << 10; // up once, right twice
     targeted_squares |= (pos & not_gh_file) >> 6; // down once, right twice
     targeted_squares |= (pos & not_h_file) >> 15;
@@ -77,9 +77,9 @@ pub fn king_moves(square: i8) -> u64 { // add more checks later (for check, chec
     let mut targeted_squares: u64 = 0u64;
     let pos = 1 << square;
 
-    targeted_squares |= (pos & !FILE_A) << 7;
-    targeted_squares |= pos << 8;
-    targeted_squares |= (pos & !FILE_H) << 9;
+    targeted_squares |= (pos & !FILE_A) << 7; // up once, left once
+    targeted_squares |= pos << 8; // one once
+    targeted_squares |= (pos & !FILE_H) << 9; // up once, right once
     targeted_squares |= (pos & !FILE_A) >> 1;
     targeted_squares |= (pos & !FILE_H) << 1;
     targeted_squares |= (pos & !FILE_A) >> 9;
@@ -209,7 +209,7 @@ pub fn pawn_moves(square: i8) ->u64 {
     let to_move = *MOVE.lock().unwrap(); // dereference ()
     let board = BOARD.lock().unwrap();
 
-    let pos = 1 << square;
+    let pos: u64 = 1u64 << square;
     let unoccupied = !(board.white_occupied | board.black_occupied);
 
 

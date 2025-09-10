@@ -38,14 +38,14 @@ fn dbg_print_board(bb: u64) { // for debugging and testing
 #[cfg(test)]
 mod tests {
     // use super::*;
-    use crate::{bitboards, dbg_print_board, legal_moves};
+    use crate::{bitboards, dbg_print_board, legal_moves, perform_moves};
     
 
-    #[test]
-    fn test_print_board(){
+    // #[test]
+    // fn test_print_board(){
 
-        bitboards::print_start_configuration();
-    }
+    //     bitboards::print_board();
+    // }
 
 
     // #[test]
@@ -58,20 +58,22 @@ mod tests {
     // }
 
     // #[test]
-    // fn test_rook_moves() {
+    // fn test_pawn_moves() {
 
-    //     print!("{:b}", legal_moves::rook_moves(0));
+    //     dbg_print_board(legal_moves::pawn_moves(8));
     //     print!("{}", "\n");
-    //     dbg_print_board(legal_moves::rook_moves(8));
+    //     dbg_print_board(legal_moves::pawn_moves(60));
     //     print!("{}", "\n");
     // }
 
     #[test]
-    fn test_pawn_moves() {
+    fn test_make_move() {
+        //perform_moves::is_legal(8, 16); // legal
+        perform_moves::make_move(8, 24);
 
-        dbg_print_board(legal_moves::pawn_moves(12));
-        print!("{}", "\n");
-        dbg_print_board(legal_moves::pawn_moves(60));
-        print!("{}", "\n");
+        // print board
+        bitboards::print_board();
     }
+
+    
 }
