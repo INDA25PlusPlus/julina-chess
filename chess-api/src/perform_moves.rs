@@ -109,7 +109,6 @@ pub fn make_move(cur_square: i8, target_square: i8) {
     }
 
     let mut board = BOARD.lock().unwrap();
-    let mut to_move = MOVE.lock().unwrap();
     let cur_mask: u64 = 1<<cur_square;
     let target_mask: u64 = 1<<target_square;
 
@@ -214,8 +213,70 @@ pub fn make_move(cur_square: i8, target_square: i8) {
     board.black_bishops &= !cur_mask;
 
     // toggle turns
+    let mut to_move = MOVE.lock().unwrap(); // after calling is_check() and is_legal()
     *to_move = (*to_move+1)%2;
 
     return;
+
+}
+
+
+pub fn is_check(new_square: i8) -> bool { // call before changing moves
+
+    let new_mask: u64 = 1<<new_square;
+    let board = BOARD.lock().unwrap();
+    let to_move = *MOVE.lock().unwrap();
+
+    if (new_mask & (board.white_pawns | board.black_pawns)) != 0 {
+
+        if to_move == 0 {
+            return (pawn_moves(new_square) & board.black_king) != 0;
+        } else {
+            return (pawn_moves(new_square) & board.white_king) != 0;
+        }
+    }
+
+    if (new_mask & (board.white_bishops | board.black_bishops)) != 0 {
+
+        if to_move == 0 {
+            return (bishop_moves(new_square) & board.black_king) != 0;
+        } else {
+            return (bishop_moves(new_square) & board.white_king) != 0;
+        }
+    }
+
+    if (new_mask & (board.white_rooks | board.black_rooks)) != 0 {
+
+        if to_move == 0 {
+            return (rook_moves(new_square) & board.black_king) != 0;
+        } else {
+            return (rook_moves(new_square) & board.white_king) != 0;
+        }
+    }
+
+    if (new_mask & (board.white_knights | board.black_knights)) != 0 {
+
+        if to_move == 0 {
+            return (knight_moves(new_square) & board.black_king) != 0;
+        } else {
+            return (knight_moves(new_square) & board.white_king) != 0;
+        }
+    }
+
+    if (new_mask & (board.white_queens | board.black_queens)) != 0 {
+
+        if to_move == 0 {
+            return (queen_moves(new_square) & board.black_king) != 0;
+        } else {
+            return (queen_moves(new_square) & board.white_king) != 0;
+        }
+    }
+
+    if (new_mask & (board.white_king | board.black_king)) != 0 {
+
+        return (king_moves(new_square) & (board.white_king | board.black_king)) != 0;
+    }
+
+    return false;
 
 }
