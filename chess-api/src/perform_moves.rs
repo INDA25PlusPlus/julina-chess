@@ -17,6 +17,7 @@ pub fn is_legal(cur_square: i8, target_square: i8) -> bool {
     }
 
     let board = BOARD.lock().unwrap();
+    let to_move = *MOVE.lock().unwrap();
     let cur_mask: u64 = 1<<cur_square;
     let target_mask: u64 = 1<<target_square;
 
@@ -24,30 +25,68 @@ pub fn is_legal(cur_square: i8, target_square: i8) -> bool {
     // can't lock Mutex BOARD twice, but since it's also locked in pawn_moves(), bishop_moves() etc.
     // the lock needs to be dropped before calling these functions
     // https://users.rust-lang.org/t/when-is-drop-called-on-mutex/6571/2
-    if (cur_mask & (board.white_pawns | board.black_pawns)) != 0 {
-        drop(board);
+
+    if ((cur_mask & board.white_pawns) != 0) && to_move == 0 {
+        drop((board, to_move));
         return (pawn_moves(cur_square) & target_mask) != 0;
     }
-    if (cur_mask & (board.white_bishops | board.black_bishops)) != 0 {
-        drop(board);
+
+    if ((cur_mask & board.white_bishops) != 0) && to_move == 0 {
+        drop((board, to_move));
         return (bishop_moves(cur_square) & target_mask) != 0;
     }
-    if (cur_mask & (board.white_king | board.black_king)) != 0 {
-        drop(board);
-        return (king_moves(cur_square) & target_mask) != 0;
+
+    if ((cur_mask & board.white_knights) != 0) && to_move == 0 {
+        drop((board, to_move));
+        return (knight_moves(cur_square) & target_mask) != 0;
     }
-    if (cur_mask & (board.white_knights | board.black_knights)) != 0 {
-        drop(board);
-        return (knight_moves(cur_square) & 1<< target_square) != 0;
+
+    if ((cur_mask & board.white_rooks) != 0) && to_move == 0 {
+        drop((board, to_move));
+        return (rook_moves(cur_square) & target_mask) != 0;
     }
-    if (cur_mask & (board.white_rooks | board.black_rooks)) != 0 {
-        drop(board);
-        return (rook_moves(cur_square) & 1 <<target_square) != 0;
-    }
-    if (cur_mask & (board.white_queens | board.black_queens)) != 0 {
-        drop(board);
+
+    if ((cur_mask & board.white_queens) != 0) && to_move == 0 {
+        drop((board, to_move));
         return (queen_moves(cur_square) & target_mask) != 0;
     }
+
+    if ((cur_mask & board.white_king) != 0) && to_move == 0 {
+        drop((board, to_move));
+        return (king_moves(cur_square) & target_mask) != 0;
+    }
+
+ 
+    if ((cur_mask & board.black_pawns) != 0) && to_move == 1 {
+        drop((board, to_move));
+        return (pawn_moves(cur_square) & target_mask) != 0;
+    }
+
+    if ((cur_mask & board.black_bishops) != 0) && to_move == 1 {
+        drop((board, to_move));
+        return (bishop_moves(cur_square) & target_mask) != 0;
+    }
+
+    if ((cur_mask & board.black_knights) != 0) && to_move == 1 {
+        drop((board, to_move));
+        return (knight_moves(cur_square) & target_mask) != 0;
+    }
+
+    if ((cur_mask & board.black_rooks) != 0) && to_move == 1 {
+        drop((board, to_move));
+        return (rook_moves(cur_square) & target_mask) != 0;
+    }
+
+    if ((cur_mask & board.black_queens) != 0) && to_move == 1 {
+        drop((board, to_move));
+        return (queen_moves(cur_square) & target_mask) != 0;
+    }
+
+    if ((cur_mask & board.black_king) != 0) && to_move == 1 {
+        drop((board, to_move));
+        return (king_moves(cur_square) & target_mask) != 0;
+    }
+
 
     return false;
 }
@@ -65,7 +104,7 @@ pub fn is_legal(cur_square: i8, target_square: i8) -> bool {
 pub fn make_move(cur_square: i8, target_square: i8) {
 
     if !is_legal(cur_square, target_square) {
-        print!("{}", "Invalid move.");
+        print!("{}", "Invalid move.\n");
         return;
     }
 

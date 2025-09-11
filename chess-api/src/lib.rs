@@ -6,8 +6,9 @@ pub mod perform_moves;
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 use bitboards::Board;
+//use std::io::{stdin,stdout,Write};
 
-// GLOBAL STATES
+ // GLOBAL STATES
 pub static BOARD: Lazy<Mutex<Board>> = Lazy::new(|| {
     Mutex::new(Board::new())
 });
@@ -15,6 +16,37 @@ pub static BOARD: Lazy<Mutex<Board>> = Lazy::new(|| {
 pub static MOVE: Lazy<Mutex<u8>> = Lazy::new(|| { // 0: whites move, 1: blacks move
     Mutex::new(0)
 });
+
+// fn game() {
+
+//     bitboards::print_board();
+
+//     if *MOVE.lock().unwrap() == 0 {
+//         print!("{}", "White to move. Make a move by printing current move, followed by target move (on different lines).\n");
+//     }
+//     else {
+//         print!("{}", "Black to move. Make a move.\n");
+//     }
+
+
+//     let mut m:i8 = 0;
+    
+//     loop {
+//         print!("{}", "Print q to quit the game. Else continue playing. \n");
+
+//         stdout().flush().expect("failed to flush stdout");
+//         m.clear();
+//         stdin().read_line(&mut m).expect("Did not enter a correct string")
+
+
+
+//     }
+
+   
+
+
+
+// }
 
 #[allow(dead_code)] // (only used in tests)
 fn dbg_print_board(bb: u64) { // for debugging and testing
@@ -38,7 +70,8 @@ fn dbg_print_board(bb: u64) { // for debugging and testing
 #[cfg(test)]
 mod tests {
     // use super::*;
-    use crate::{bitboards, dbg_print_board, legal_moves, perform_moves};
+    use crate::{bitboards, dbg_print_board, legal_moves, perform_moves, BOARD};
+
     
 
     // #[test]
@@ -70,6 +103,22 @@ mod tests {
     fn test_make_move() {
         //perform_moves::is_legal(8, 16); // legal
         perform_moves::make_move(8, 24);
+
+        // print board
+        bitboards::print_board();
+
+
+        perform_moves::make_move(24, 40); // not legal
+
+        bitboards::print_board();
+
+        perform_moves::make_move(48, 40);
+
+        let board = BOARD.lock().unwrap();
+        dbg_print_board(board.white_pawns);
+        drop(board);
+        dbg_print_board(legal_moves::pawn_moves(24));
+
 
         // print board
         bitboards::print_board();
