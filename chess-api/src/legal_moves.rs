@@ -67,7 +67,7 @@ pub fn king_moves(pos: u64, board: &Board, to_move: u8) -> u64 { // add more che
     };
 
 
-    targeted_squares |= ((pos & !FILE_A) << 7 & !own_occupied); // up once, left once
+    targeted_squares |= (pos & !FILE_A) << 7 & !own_occupied; // up once, left once
     targeted_squares |= pos << 8 & !own_occupied; // one once
     targeted_squares |= (pos & !FILE_H) << 9 & !own_occupied; // up once, right once
     targeted_squares |= (pos & !FILE_A) >> 1 & !own_occupied;

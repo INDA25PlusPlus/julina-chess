@@ -94,15 +94,6 @@ mod tests {
     use super::*;
    // use crate::{game};
 
-    
-
-    // #[test]
-    // fn test_print_board(){
-
-    //     bitboards::print_board();
-    // }
-
-
 
     #[test]
     fn test_pawn_moves() {
@@ -113,7 +104,7 @@ mod tests {
         assert_eq!(result, 1<<16 | 1<<24);
         // let result = legal_moves::pawn_moves(1<<60) ;
         // assert_eq!(result, 0);
-        dbg_print_board(legal_moves::pawn_moves(1<<8 | 1<<9, &board, 0));
+        //dbg_print_board(legal_moves::pawn_moves(1<<8 | 1<<9, &board, 0));
     }
 
     #[test]
@@ -161,10 +152,56 @@ mod tests {
         legal_moves::queen_moves(16, &board, 0);
     }
 
-    // #[test]
-    // fn test_is_check() {
-    //     perform_moves::is_check();
-    // }
+    #[test]
+    fn test_print_board(){
+
+        let board = Board::new(); // start configuration
+
+        bitboards::print_board(&board); // print start config
+    }
+
+    #[test]
+    fn test_is_legal() {
+
+        let board = Board::new(); // start configuration
+        
+        let mut result = perform_moves::is_legal(12, 28, &board, 0); //legal
+        assert_eq!(result, true);
+        result = perform_moves::is_legal(50, 40, &board, 0); // not legal
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn test_is_check() {
+
+        let board = Board::new(); // start configuration
+
+        assert_eq!(perform_moves::is_check(&board, 0), false); 
+    }
+
+
+
+    #[test]
+    fn test_make_move() {
+
+        perform_moves::make_move(12, 28); // e2-e4
+    
+        perform_moves::make_move(52, 36); // e7-e5
+
+        perform_moves::make_move(5, 26); //bf1-c4
+
+        perform_moves::make_move(51, 43); // d7-d6
+
+        perform_moves::make_move(26, 53); //bc4-f7+
+
+
+        let board = BOARD.lock().unwrap();
+
+        assert_eq!(perform_moves::is_check(&board, 0), true);
+
+        // print board
+        bitboards::print_board(&board);
+    }
 
 
     // #[test]

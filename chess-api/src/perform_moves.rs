@@ -5,19 +5,18 @@ use crate::legal_moves::knight_moves;
 use crate::legal_moves::pawn_moves;
 use crate::legal_moves::queen_moves;
 use crate::legal_moves::rook_moves;
+use crate::Board;
 use crate::BOARD;
 use crate::MOVE;
 
 
 
-pub fn is_legal(cur_square: i8, target_square: i8) -> bool {
+pub fn is_legal(cur_square: i8, target_square: i8, board: &Board, to_move: u8) -> bool {
 
     if cur_square < 0 || cur_square > 63 || target_square < 0 || target_square > 63 {
         return false;
     }
 
-    let board = BOARD.lock().unwrap();
-    let to_move = *MOVE.lock().unwrap();
     let cur_mask: u64 = 1<<cur_square;
     let target_mask: u64 = 1<<target_square;
 
@@ -80,29 +79,18 @@ pub fn is_legal(cur_square: i8, target_square: i8) -> bool {
 }
 
 
-// pub fn read_current_square(cur_square: String) {
-
-//     // convert string to bit (and check if invalid cur_square or target_square)
-
-
-// }
-
-// pub fn read_target_square(target_square: String) {
-
-    
-// }
-
 
 pub fn make_move(cur_square: i8, target_square: i8) {
 
-    if !is_legal(cur_square, target_square) {
+    let mut board = BOARD.lock().unwrap();
+    let mut to_move = MOVE.lock().unwrap(); 
+    let cur_mask: u64 = 1<<cur_square;
+    let target_mask: u64 = 1<<target_square;
+
+    if !is_legal(cur_square, target_square, &board, *to_move) {
         print!("{}", "Invalid move.\n");
         return;
     }
-
-    let mut board = BOARD.lock().unwrap();
-    let cur_mask: u64 = 1<<cur_square;
-    let target_mask: u64 = 1<<target_square;
 
 
     // if capture
@@ -204,8 +192,12 @@ pub fn make_move(cur_square: i8, target_square: i8) {
     board.black_rooks &= !cur_mask;
     board.black_bishops &= !cur_mask;
 
+
+    if is_check(&board, *to_move) {
+        print!("Check!\n");
+    }
+
     // toggle turns
-    let mut to_move = MOVE.lock().unwrap(); // after calling is_check() and is_legal()
     *to_move = (*to_move+1)%2;
 
     return;
@@ -213,10 +205,8 @@ pub fn make_move(cur_square: i8, target_square: i8) {
 }
 
 
-pub fn is_check() -> bool { // call before changing moves
+pub fn is_check(board: &Board, to_move:u8) -> bool { // call before changing moves
 
-    let board = BOARD.lock().unwrap();
-    let to_move = *MOVE.lock().unwrap();
 
     /* compute ALL potential moves for the color that just moved.
     Otherwise will not account for discovered checks!*/ 
@@ -249,8 +239,6 @@ pub fn is_check() -> bool { // call before changing moves
         }
 
     }
-
-
 
     return false;
 
