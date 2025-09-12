@@ -1,5 +1,6 @@
 /*
-For each piece, exists a function returning targeted squares from a square (passed in as parameter).
+For each piece, exists a function returning all targeted squares, input parameter is a bitboard representing
+all squares occupied by the specific piece. 
 
 - BOARD is a global instance of struct Board definied in bitboards.rs
 - `BOARD.white_occupied` and `BOARD.black_occupied` track which squares are occupied by each color.
@@ -26,13 +27,11 @@ const SEVENTH_RANK: u64 = 0xFF000000000000;
 //const FIRST_RANK: u64 = 0x00000000000000FF;
 //const EIGHT_RANK: u64 = 0xFF00000000000000;
 
-pub fn knight_moves(square: i8) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
+pub fn knight_moves(pos: u64) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
 
     let mut targeted_squares: u64 = 0u64;
     let board = BOARD.lock().unwrap();
     let to_move = *MOVE.lock().unwrap();
-
-    let pos = 1 << square; // knight bitboard
 
     let not_a_file = !FILE_A;
     let not_ab_file = !(FILE_A | FILE_B);
@@ -61,10 +60,9 @@ pub fn knight_moves(square: i8) -> u64 { // masking inspo: https://www.chessprog
 
 
 
-pub fn king_moves(square: i8) -> u64 { // add more checks later (for check, checkmate etc.)
+pub fn king_moves(pos: u64) -> u64 { // add more checks later (for check, checkmate etc.)
 
     let mut targeted_squares: u64 = 0u64;
-    let pos = 1 << square;
 
     targeted_squares |= (pos & !FILE_A) << 7; // up once, left once
     targeted_squares |= pos << 8; // one once
@@ -80,7 +78,7 @@ pub fn king_moves(square: i8) -> u64 { // add more checks later (for check, chec
 }
 
 
-pub fn rook_moves(square: i8) -> u64{
+pub fn rook_moves(square: u64) -> u64{
 
     let board = BOARD.lock().unwrap();
     let to_move = *MOVE.lock().unwrap();
@@ -177,7 +175,21 @@ pub fn rook_moves(square: i8) -> u64{
 
 
 
-pub fn bishop_moves(square: i8) -> u64 {
+pub fn bishop_moves(pos: u64) -> u64 {
+    let mut targeted_squares = 0u64;
+    let mut bishops = pos;
+
+    while bishops != 0 {
+        let square = bishops.trailing_zeros() as i8; // gives square of occupied bit, eg. 1110000.trailing_zeros() = 4.
+        bishops &= bishops - 1; // removes least significant set bit
+
+        targeted_squares |= helper_bishop_moves(square);
+    }
+
+    return targeted_squares;
+}
+
+pub fn helper_bishop_moves(square: i8) -> u64 {
 
     let board = BOARD.lock().unwrap();
     let to_move = *MOVE.lock().unwrap();
@@ -288,20 +300,19 @@ pub fn bishop_moves(square: i8) -> u64 {
 }
 
 
-pub fn queen_moves(square: i8) -> u64 { // combine bishop&rook moves
+pub fn queen_moves(square: u64) -> u64 { // combine bishop&rook moves
 
     return rook_moves(square) | bishop_moves(square);
 
 }
 
 
-pub fn pawn_moves(square: i8) ->u64 {
+pub fn pawn_moves(pos: u64) ->u64 {
 
     let mut targeted_squares: u64 = 0u64;
     let to_move = *MOVE.lock().unwrap(); // dereference ()
     let board = BOARD.lock().unwrap();
 
-    let pos: u64 = 1u64 << square;
     let unoccupied = !(board.white_occupied | board.black_occupied);
 
 
