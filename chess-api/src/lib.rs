@@ -83,6 +83,7 @@ fn dbg_print_board(bb: u64) { // for debugging and testing
         }
         print!("{}", "\n\n");
     }
+    print!("{}", "\n\n");
 }
 
 
@@ -121,7 +122,7 @@ mod tests {
     fn test_rook_moves() {
 
         legal_moves::rook_moves(16);
-        dbg_print_board(legal_moves::rook_moves(24));
+        //dbg_print_board(legal_moves::rook_moves(24));
     }
 
     #[test]
@@ -129,6 +130,8 @@ mod tests {
         legal_moves::bishop_moves(0);
         legal_moves::bishop_moves(8);
         legal_moves::bishop_moves(63);
+        //dbg_print_board(legal_moves::bishop_moves(30));
+        //dbg_print_board(legal_moves::bishop_moves(28));
     }
 
     #[test]

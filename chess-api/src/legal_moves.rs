@@ -25,6 +25,8 @@ const FILE_G: u64 = 0b1000000010000000100000001000000010000000100000001000000010
 
 const SECOND_RANK: u64 = 0b1111111100000000; 
 const SEVENTH_RANK: u64 = 0xFF000000000000;
+//const FIRST_RANK: u64 = 0x00000000000000FF;
+//const EIGHT_RANK: u64 = 0xFF00000000000000;
 
 pub fn is_valid_move(cur_square: i8, row_delta: i8, col_delta: i8) -> bool { // prevent moving outside 8x8-board
 
@@ -181,50 +183,6 @@ pub fn rook_moves(square: i8) -> u64{
         }
     }
 
-
-
-    // let dirs: [(i8, i8); 4] = [
-    //     (-1, 0), // down (bit 0 represents sqr a1)
-    //     (1, 0), // up
-    //     (0, -1), // left
-    //     (0, 1) // right
-
-    // ];
-
-
-    // for (row_delta, col_delta) in dirs {
-    
-    //     let mut n = 1; // num steps in direction (row_delta, col_delta)
-
-    //     while n < 8 {
-
-    //         if is_valid_move(square, row_delta*n, col_delta*n) {
-                    
-    //             let new_square = square+row_delta*8*n+col_delta*n;
-        
-    //             if (board.black_occupied | board.white_occupied) & (1 << new_square) == 0 { // not occupied
-
-    //                 targeted_squares |= 1 << new_square;
-    //             }  
-                
-    //             // If the occupied square is of the opponent's color, add it to targeted squares
-    //             else if to_move == 0 { 
-    //                targeted_squares |= board.black_occupied & (1 << new_square);
-    //                break;
-    //             } else if to_move == 1 { 
-    //                targeted_squares |= board.white_occupied & (1 << new_square);
-    //                break;
-    //             } else {
-    //                 break;
-    //             }
-    //         } else {
-    //             break;
-    //         }
-
-    //         n += 1;
-    //     }
-    // }
-
     return targeted_squares;
         
 
@@ -245,52 +203,155 @@ pub fn bishop_moves(square: i8) -> u64 {
 
     let mut targeted_squares: u64 = 0u64;
 
-    
+    let unoccupied = !(board.white_occupied | board.black_occupied);
 
-    let dirs: [(i8, i8); 4] = [
-        (1, -1), // up, left
-        (1, 1),
-        (-1, -1),
-        (-1, 1)
-    ];
+    // bitmasking 
 
+    let cur_row = square/8;
+    let cur_col = square % 8;
+    let cur_mask = 1 << square;
 
+    let max_up_right = 8-cur_row.min(8-cur_col); // limited by row and column
+    let max_up_left = 8-cur_row.min(cur_col+1);
 
-
-    for (row_delta, col_delta) in dirs {
-
-        let mut n = 1;
+    let max_down_right = cur_row+1.min(8-cur_col);
+    let max_down_left = cur_row+1.min(cur_col+1);
 
 
+    for n in 1..max_up_right { // iterate up, right
 
+        // 8*n+n = 9*n
+        let new_mask = (cur_mask << 9*(n-1) & !FILE_H) << 9;
 
-        while n < 8 {
-
-            if is_valid_move(square, row_delta*n, col_delta*n) {
-
-                let new_square = square+8*n*row_delta+n*col_delta;
-                
-                if (board.white_occupied | board.black_occupied) & (1<<new_square) == 0 { // not occupied
-                    targeted_squares |= 1<<new_square;
-                }
-
-                // If the occupied square is of the opponent's color, add it to targeted squares
-                else if to_move == 0 { // white to move, can caputre black's piece
-                    targeted_squares |= board.black_occupied & (1<<new_square);
-                    break;
-                } else if to_move == 1 {
-                    targeted_squares |= board.white_occupied & (1<<new_square);
-                    break;
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
-
-            n += 1;
+        if (new_mask & unoccupied) != 0 {
+            targeted_squares |= new_mask & unoccupied;
+        }
+        else if to_move == 0 {
+            targeted_squares |= new_mask & board.black_occupied;
+            break;
+        }
+        else if to_move == 1 {
+            targeted_squares |= new_mask & board.white_occupied;
+            break;
+        }
+        else {
+            break;
         }
     }
+
+    for n in 1..max_up_left { // iterate up, left
+
+        // 8*n - n = 7*n
+
+        let new_mask = (cur_mask << 7*(n-1) & !FILE_A) << 7;
+
+        if (new_mask & unoccupied) != 0 {
+            targeted_squares |= new_mask & unoccupied;
+        }
+        else if to_move == 0 {
+            targeted_squares |= new_mask & board.black_occupied;
+            break;
+        }
+        else if to_move == 1 {
+            targeted_squares |= new_mask & board.white_occupied;
+        }
+        else {
+            break;
+        }
+    }
+
+    for n in 1..max_down_right { // iteratre down, right
+
+        //  7*n
+
+        let new_mask = (cur_mask >> 7*(n-1) & !FILE_H) >> 7 ;
+
+        if (new_mask & unoccupied) != 0 {
+            targeted_squares |= new_mask & unoccupied;
+        }
+        else if to_move == 0 {
+            targeted_squares |= new_mask & board.black_occupied;
+            break;
+        }
+        else if to_move == 1 {
+            targeted_squares |= new_mask & board.white_occupied;
+        }
+        else {
+            break;
+        }
+    }
+
+    for n in 1..max_down_left { // iterate down, left
+
+        // 9*n
+
+        let new_mask = (cur_mask >> 9*(n-1) & !FILE_A) >> 9;
+
+        if (new_mask & unoccupied) != 0 {
+            targeted_squares |= new_mask & unoccupied;
+        }
+        else if to_move == 0 {
+            targeted_squares |= new_mask & board.black_occupied;
+            break;
+        }
+        else if to_move == 1 {
+            targeted_squares |= new_mask & board.white_occupied;
+            break;
+        }
+        else {
+            break;
+        }
+    }
+
+
+
+
+    // let dirs: [(i8, i8); 4] = [
+    //     (1, -1), // up, left
+    //     (1, 1),
+    //     (-1, -1),
+    //     (-1, 1)
+    // ];
+
+
+
+
+    // for (row_delta, col_delta) in dirs {
+
+    //     let mut n = 1;
+
+
+
+
+    //     while n < 8 {
+
+    //         if is_valid_move(square, row_delta*n, col_delta*n) {
+
+    //             let new_square = square+8*n*row_delta+n*col_delta;
+                
+    //             if (board.white_occupied | board.black_occupied) & (1<<new_square) == 0 { // not occupied
+    //                 targeted_squares |= 1<<new_square;
+    //             }
+
+    //             // If the occupied square is of the opponent's color, add it to targeted squares
+    //             else if to_move == 0 { // white to move, can caputre black's piece
+    //                 targeted_squares |= board.black_occupied & (1<<new_square);
+    //                 break;
+    //             } else if to_move == 1 {
+    //                 targeted_squares |= board.white_occupied & (1<<new_square);
+    //                 break;
+    //             } else {
+    //                 break;
+    //             }
+    //         } else {
+    //             break;
+    //         }
+
+    //         n += 1;
+    //     }
+    // }
+
+
     return targeted_squares;
 }
 
