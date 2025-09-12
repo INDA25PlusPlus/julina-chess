@@ -98,52 +98,144 @@ pub fn rook_moves(square: i8) -> u64{
 
     let mut targeted_squares: u64 = 0u64;
 
-    let dirs: [(i8, i8); 4] = [
-        (-1, 0), // down (bit 0 represents sqr a1)
-        (1, 0), // up
-        (0, -1), // left
-        (0, 1) // right
-
-    ];
+    let unoccupied = !(board.white_occupied | board.black_occupied);
 
 
-    for (row_delta, col_delta) in dirs {
-    
-        let mut n = 1; // num steps in direction (row_delta, col_delta)
+    // bitmasking 
 
-        while n < 8 {
+    let cur_row = square/8;
+    let cur_col = square % 8;
+    let cur_mask = 1 << square;
 
-            if is_valid_move(square, row_delta*n, col_delta*n) {
+    for n in 1..8-cur_row { // iterate upwards
 
-                let new_square = square+row_delta*8*n+col_delta*n;
-        
-                if (board.black_occupied | board.white_occupied) & (1 << new_square) == 0 { // not occupied
-
-                    targeted_squares |= 1 << new_square;
-                }  
-                
-                // If the occupied square is of the opponent's color, add it to targeted squares
-                else if to_move == 0 { 
-                   targeted_squares |= board.black_occupied & (1 << new_square);
-                   break;
-                } else if to_move == 1 { 
-                   targeted_squares |= board.white_occupied & (1 << new_square);
-                   break;
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
-
-            n += 1;
+        if (cur_mask << 8*n & unoccupied) != 0 {
+            targeted_squares |= cur_mask << 8*n & unoccupied;
+        }
+        else if (cur_mask << 8*n & board.black_occupied) != 0 && (to_move == 0) {
+            targeted_squares |= cur_mask << 8*n & board.black_occupied;
+            break;
+        }
+        else if (cur_mask << 8*n & board.white_occupied) != 0 && (to_move == 1) {
+            targeted_squares |= cur_mask << 8*n & board.white_occupied;
+            break;
+        }
+        else {
+            break;
         }
     }
+
+    for n in 1..cur_row+2 { // iterate downwards
+
+        if (cur_mask >> 8*n & unoccupied) != 0 {
+            targeted_squares |= cur_mask >> 8*n & unoccupied;
+        }
+        else if (cur_mask >> 8*n & board.black_occupied) != 0 && (to_move == 0) {
+            targeted_squares |= cur_mask >> 8*n & board.black_occupied;
+            break;
+        }
+        else if (cur_mask >> 8*n & board.white_occupied) != 0 && (to_move == 1) {
+            targeted_squares |= cur_mask >> 8*n & board.white_occupied;
+            break;
+        }
+        else {
+            break;
+        }
+    }
+
+    for n in 1..8-cur_col { // iterate right
+
+        if (cur_mask << n & unoccupied) != 0 {
+            targeted_squares |= cur_mask << n & unoccupied;
+        }
+
+        else if (cur_mask << n & board.black_occupied) != 0 && (to_move == 0) {
+            targeted_squares |= cur_mask << n & board.black_occupied;
+            break;
+        }
+        else if (cur_mask << n & board.white_occupied) != 0 && (to_move == 1) {
+            targeted_squares |= cur_mask << n & board.white_occupied;
+            break;
+        }
+        else {
+            break;
+        }
+    }
+
+    for n in 1..8-cur_col { // iterate right
+
+        if (cur_mask >> n & unoccupied) != 0 {
+            targeted_squares |= cur_mask >> n & unoccupied;
+        }
+
+        else if (cur_mask >> n & board.black_occupied) != 0 && (to_move == 0) {
+            targeted_squares |= cur_mask >> n & board.black_occupied;
+            break;
+        }
+        else if (cur_mask >> n & board.white_occupied) != 0 && (to_move == 1) {
+            targeted_squares |= cur_mask >> n & board.white_occupied;
+            break;
+        }
+        else {
+            break;
+        }
+    }
+
+
+
+    // let dirs: [(i8, i8); 4] = [
+    //     (-1, 0), // down (bit 0 represents sqr a1)
+    //     (1, 0), // up
+    //     (0, -1), // left
+    //     (0, 1) // right
+
+    // ];
+
+
+    // for (row_delta, col_delta) in dirs {
+    
+    //     let mut n = 1; // num steps in direction (row_delta, col_delta)
+
+    //     while n < 8 {
+
+    //         if is_valid_move(square, row_delta*n, col_delta*n) {
+                    
+    //             let new_square = square+row_delta*8*n+col_delta*n;
+        
+    //             if (board.black_occupied | board.white_occupied) & (1 << new_square) == 0 { // not occupied
+
+    //                 targeted_squares |= 1 << new_square;
+    //             }  
+                
+    //             // If the occupied square is of the opponent's color, add it to targeted squares
+    //             else if to_move == 0 { 
+    //                targeted_squares |= board.black_occupied & (1 << new_square);
+    //                break;
+    //             } else if to_move == 1 { 
+    //                targeted_squares |= board.white_occupied & (1 << new_square);
+    //                break;
+    //             } else {
+    //                 break;
+    //             }
+    //         } else {
+    //             break;
+    //         }
+
+    //         n += 1;
+    //     }
+    // }
 
     return targeted_squares;
         
 
 }
+
+
+
+
+
+
+
 
 
 pub fn bishop_moves(square: i8) -> u64 {
@@ -153,6 +245,8 @@ pub fn bishop_moves(square: i8) -> u64 {
 
     let mut targeted_squares: u64 = 0u64;
 
+    
+
     let dirs: [(i8, i8); 4] = [
         (1, -1), // up, left
         (1, 1),
@@ -161,15 +255,20 @@ pub fn bishop_moves(square: i8) -> u64 {
     ];
 
 
+
+
     for (row_delta, col_delta) in dirs {
 
         let mut n = 1;
+
+
+
 
         while n < 8 {
 
             if is_valid_move(square, row_delta*n, col_delta*n) {
 
-                let new_square: i32 = 1<<square+8*n*row_delta+n*col_delta;
+                let new_square = square+8*n*row_delta+n*col_delta;
                 
                 if (board.white_occupied | board.black_occupied) & (1<<new_square) == 0 { // not occupied
                     targeted_squares |= 1<<new_square;
