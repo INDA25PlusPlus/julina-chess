@@ -10,7 +10,6 @@ use crate::BOARD;
 use crate::MOVE;
 
 
-
 pub fn is_legal(cur_square: i8, target_square: i8, board: &Board, to_move: u8) -> bool {
 
     if cur_square < 0 || cur_square > 63 || target_square < 0 || target_square > 63 {
@@ -25,57 +24,72 @@ pub fn is_legal(cur_square: i8, target_square: i8, board: &Board, to_move: u8) -
     // the lock needs to be dropped before calling these functions
     // https://users.rust-lang.org/t/when-is-drop-called-on-mutex/6571/2
 
+
+    let mut legal_piece_movement: bool = false;
+
+
     if ((cur_mask & board.white_pawns) != 0) && to_move == 0 {
-        return (pawn_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (pawn_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_bishops) != 0) && to_move == 0 {
-        return (bishop_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (bishop_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_knights) != 0) && to_move == 0 {
-        return (knight_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (knight_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_rooks) != 0) && to_move == 0 {
-        return (rook_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (rook_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_queens) != 0) && to_move == 0 {
-        return (queen_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (queen_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_king) != 0) && to_move == 0 {
-        return (king_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (king_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
-
  
     if ((cur_mask & board.black_pawns) != 0) && to_move == 1 {
-        return (pawn_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (pawn_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_bishops) != 0) && to_move == 1 {
-        return (bishop_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (bishop_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_knights) != 0) && to_move == 1 {
-        return (knight_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (knight_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_rooks) != 0) && to_move == 1 {
-        return (rook_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (rook_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_queens) != 0) && to_move == 1 {
-        return (queen_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (queen_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_king) != 0) && to_move == 1 {
-        return (king_moves(cur_mask, &board, to_move) & target_mask) != 0;
+        legal_piece_movement = (king_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
+    if !legal_piece_movement {
+        return false;
+    }
 
-    return false;
+    let simulated_board = simulate_make_move(cur_square, target_square, board);
+
+    if to_move == 0 && is_check(&simulated_board, 1) {
+        return false; // white king would be in check
+    }
+    if to_move == 1 && is_check(&simulated_board, 0) {
+        return false; // black king would be in check
+    }
+
+    return true;
 }
 
 
@@ -191,7 +205,6 @@ pub fn simulate_make_move(cur_square: i8, target_square: i8, board: &Board) -> B
 
     return temp_board;
 }
-
 
 
 pub fn make_move(cur_square: i8, target_square: i8) {
@@ -315,7 +328,6 @@ pub fn make_move(cur_square: i8, target_square: i8) {
         }
 
     }
-
 
     // toggle turns
     *to_move = (*to_move+1)%2;
