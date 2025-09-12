@@ -334,8 +334,8 @@ pub fn pawn_moves(pos: u64, board: &Board, to_move: u8) ->u64 {
 
         let one_step = pos << 8 & unoccupied;
         let two_steps = (((SECOND_RANK << 8) & one_step) << 8) & unoccupied;
-        let capture_left = board.black_occupied & ((pos&!FILE_A) << 8 - 1);
-        let capture_right = board.black_occupied & ((pos&!FILE_H) << 8 + 1);
+        let capture_left = board.black_occupied & ((pos&!FILE_A) << 7);
+        let capture_right = board.black_occupied & ((pos&!FILE_H) << 9);
 
         targeted_squares |= one_step | two_steps | capture_left | capture_right;
      
@@ -343,8 +343,8 @@ pub fn pawn_moves(pos: u64, board: &Board, to_move: u8) ->u64 {
 
         let one_step = pos >> 8 & unoccupied;
         let two_steps = (((SEVENTH_RANK >> 8) & one_step) >> 8) & unoccupied;
-        let capture_left = board.black_occupied & ((pos&!FILE_A) >> 8 - 1);
-        let capture_right = board.black_occupied & ((pos&!FILE_H) >> 8 + 1);
+        let capture_left = board.white_occupied & ((pos&!FILE_A) >> 9);
+        let capture_right = board.white_occupied & ((pos&!FILE_H) >> 7);
 
         targeted_squares |= one_step | two_steps | capture_left | capture_right;
         
