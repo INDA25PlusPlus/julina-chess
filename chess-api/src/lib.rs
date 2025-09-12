@@ -105,33 +105,42 @@ mod tests {
     #[test]
     fn test_pawn_moves() {
 
-        let result = legal_moves::pawn_moves(8);
+        let result = legal_moves::pawn_moves(1<<8);
         assert_eq!(result, 1<<16 | 1<<24);
-        let result = legal_moves::pawn_moves(60) ;
+        let result = legal_moves::pawn_moves(1<<60) ;
         assert_eq!(result, 0);
+        //dbg_print_board(legal_moves::pawn_moves(1<<8 | 1<<9));
     }
 
     #[test]
     fn test_king_moves() {
 
-        legal_moves::king_moves(30);
+        legal_moves::king_moves(1<<30);
         //dbg_print_board(legal_moves::king_moves(30));
+    }
+
+    #[test]
+    fn test_knight_moves() {
+
+        legal_moves::knight_moves(1<<16);
     }
 
     #[test]
     fn test_rook_moves() {
 
-        legal_moves::rook_moves(16);
-        //dbg_print_board(legal_moves::rook_moves(24));
+        legal_moves::rook_moves(1<<16);
+        // dbg_print_board(legal_moves::rook_moves(1<<24 | 1<<34));
+        // dbg_print_board(legal_moves::helper_rook_moves(24));
+
     }
 
     #[test]
     fn test_bishop_moves() {
-        legal_moves::bishop_moves(0);
-        legal_moves::bishop_moves(8);
-        legal_moves::bishop_moves(63);
-        //dbg_print_board(legal_moves::bishop_moves(30));
-        //dbg_print_board(legal_moves::bishop_moves(28));
+        legal_moves::bishop_moves(1<<0);
+        legal_moves::bishop_moves(1<<8);
+        legal_moves::bishop_moves(1<<63);
+        // dbg_print_board(legal_moves::bishop_moves(1<<30));
+        // dbg_print_board(legal_moves::bishop_moves(1<<28));
     }
 
     #[test]
