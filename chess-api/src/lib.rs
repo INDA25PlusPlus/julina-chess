@@ -23,10 +23,13 @@ fn game() {
     use std::io::{stdin,stdout,Write};
 
     let mut s = String::new();
+    let mut current = String::new();
+    let mut target = String::new();
 
 
     loop {
-        print!("Enter q to quit. Else press enter.\n");
+        print!("Enter q to quit");
+
         let _=stdout().flush();
         stdin().read_line(&mut s).expect("Did not enter a correct string");
 
@@ -39,30 +42,31 @@ fn game() {
 
         if s == "q".to_string() {
             break;
+        } else {
+            print!("Enter square from where to move");
+            current.clear();
+            stdin().read_line(&mut current).expect("Did not enter a correct string");
+            
+
+            print!("Enter square to where to move");
+            target.clear();
+            stdin().read_line(&mut target).expect("Did not enter a correct string");
+
+
         }
-
-
         println!("You typed: {}",s);
 
 
-        
-
         s.clear();
-
-         //perform_moves::read_move(current, target);
-
-            
-
-
-
-        }
 
 
     }
 
+}
 
 
-    
+
+     
 
 #[allow(dead_code)] // (only used in tests)
 fn dbg_print_board(bb: u64) { // for debugging and testing
@@ -83,10 +87,10 @@ fn dbg_print_board(bb: u64) { // for debugging and testing
 
 
 
-#[cfg(test)]
+#[cfg(test)] // kompileras endast när tester körs
 mod tests {
-    // use super::*;
-    use crate::{bitboards, dbg_print_board, legal_moves, perform_moves, BOARD, game};
+    use super::*;
+   // use crate::{game};
 
     
 
@@ -97,23 +101,44 @@ mod tests {
     // }
 
 
-    // #[test]
-    // fn test_bishop_moves() {
+    #[test]
+    fn test_pawn_moves() {
 
-    //     print!("{:b}", legal_moves::bishop_moves(0));
-    //     print!("{}", "\n");
-    //     dbg_print_board(legal_moves::bishop_moves(8));
-    //     print!("{}", "\n");
-    // }
+        let result = legal_moves::pawn_moves(8);
+        assert_eq!(result, 1<<16 | 1<<24);
+        let result = legal_moves::pawn_moves(60) ;
+        assert_eq!(result, 0);
+    }
 
-    // #[test]
-    // fn test_pawn_moves() {
+    #[test]
+    fn test_king_moves() {
 
-    //     dbg_print_board(legal_moves::pawn_moves(8));
-    //     print!("{}", "\n");
-    //     dbg_print_board(legal_moves::pawn_moves(60));
-    //     print!("{}", "\n");
-    // }
+        legal_moves::king_moves(30);
+        //dbg_print_board(legal_moves::king_moves(30));
+    }
+
+    #[test]
+    fn test_rook_moves() {
+
+        legal_moves::rook_moves(16);
+        dbg_print_board(legal_moves::rook_moves(24));
+    }
+
+    #[test]
+    fn test_bishop_moves() {
+        legal_moves::bishop_moves(0);
+        legal_moves::bishop_moves(8);
+        legal_moves::bishop_moves(63);
+    }
+
+    #[test]
+    fn test_queen_moves() {
+
+        legal_moves::queen_moves(16);
+    }
+
+
+
 
     // #[test]
     // fn test_make_move() {
@@ -140,10 +165,10 @@ mod tests {
     //     bitboards::print_board();
     // }
 
-    #[test]
-    fn test_game_take_input() {
-        game();
-    }
+    // #[test]
+    // fn test_game_take_input() {
+    //     game();
+    // }
 
     
 }
