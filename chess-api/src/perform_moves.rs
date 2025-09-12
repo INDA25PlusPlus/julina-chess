@@ -116,7 +116,7 @@ pub fn simulate_make_move(cur_square: i8, target_square: i8, board: &Board) -> B
         temp_board.white_pawns |= target_mask;
     }
 
-    if (cur_mask & board.white_king) != 0 {
+    if (cur_mask & temp_board.white_king) != 0 {
         temp_board.white_occupied |= target_mask;
         temp_board.white_king |= target_mask;
     }
@@ -307,9 +307,15 @@ pub fn make_move(cur_square: i8, target_square: i8) {
     board.black_bishops &= !cur_mask;
 
 
-    if is_check(&board, *to_move) {
-        print!("Check!\n");
+    if is_checkmate_stalemate(&board, *to_move) {
+        if is_check(&board, *to_move) {
+            print!("CHECKMATE\n");
+        } else {
+            print!("STALEMATE\n");
+        }
+
     }
+
 
     // toggle turns
     *to_move = (*to_move+1)%2;
@@ -370,15 +376,26 @@ pub fn is_check(board: &Board, to_move:u8) -> bool { // call before changing mov
 }
 
 
-pub fn is_checkmate(board: &Board, to_move: u8) -> bool {
-
+pub fn is_checkmate_stalemate(board: &Board, to_move: u8) -> bool {
 
     
+    // try all possible moves
+    // to_move is the player who just made a move. (to_move+1)%2 gives the other player's move
 
+    for cur_square in 0..64 {
+        
+        for target_square in 0..64 {
 
+            if is_legal(cur_square, target_square, board, (to_move+1)%2) {
+                let new_board = simulate_make_move(cur_square, target_square, board);
+                if !is_check(&new_board, to_move) {
+                    return false;
+                }
 
+            }
+        }
+    }
 
+    return true;
 
-
-    return false;
 }

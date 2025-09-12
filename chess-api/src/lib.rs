@@ -16,6 +16,14 @@ pub static MOVE: Lazy<Mutex<u8>> = Lazy::new(|| { // 0: whites move, 1: blacks m
     Mutex::new(0)
 });
 
+pub fn reset_globals() {
+    let mut board = BOARD.lock().unwrap();
+    *board = Board::new();
+
+    let mut to_move = MOVE.lock().unwrap();
+    *to_move = 0;
+}
+
 #[allow(dead_code)]
 fn game() {
 
@@ -98,7 +106,7 @@ mod tests {
     #[test]
     fn test_pawn_moves() {
 
-        let board = BOARD.lock().unwrap();
+        let board = Board::new();
 
         let result = legal_moves::pawn_moves(1<<8, &board, 0);
         assert_eq!(result, 1<<16 | 1<<24);
@@ -110,16 +118,16 @@ mod tests {
     #[test]
     fn test_king_moves() {
 
-        let board = BOARD.lock().unwrap();
+        let board = Board::new();
 
         legal_moves::king_moves(1<<30, &board, 0);
-        //dbg_print_board(legal_moves::king_moves(30));
+        //dbg_print_board(legal_moves::king_moves(1<<60, &board, 1));
     }
 
     #[test]
     fn test_knight_moves() {
 
-        let board = BOARD.lock().unwrap();
+        let board = Board::new();
 
         legal_moves::knight_moves(1<<16, &board, 0);
     }
@@ -127,7 +135,7 @@ mod tests {
     #[test]
     fn test_rook_moves() {
 
-        let board = BOARD.lock().unwrap();
+        let board = Board::new();
         legal_moves::rook_moves(1<<16, &board, 0);
         // dbg_print_board(legal_moves::rook_moves(1<<24 | 1<<34));
         // dbg_print_board(legal_moves::helper_rook_moves(24));
@@ -136,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_bishop_moves() {
-        let board = BOARD.lock().unwrap();
+        let board = Board::new();
         legal_moves::bishop_moves(1<<0, &board, 0);
         legal_moves::bishop_moves(1<<8, &board, 0);
         legal_moves::bishop_moves(1<<63, &board, 0);
@@ -147,9 +155,11 @@ mod tests {
     #[test]
     fn test_queen_moves() {
 
-        let board = BOARD.lock().unwrap();
+        let board = Board::new();
 
-        legal_moves::queen_moves(16, &board, 0);
+        legal_moves::queen_moves(1<<16, &board, 0);
+        //dbg_print_board(legal_moves::queen_moves(1<<53, &board, 0));
+
     }
 
     #[test]
@@ -181,8 +191,36 @@ mod tests {
 
 
 
+    // #[test]
+    // fn test_make_move() {
+
+    //     reset_globals();
+
+    //     perform_moves::make_move(12, 28); // e2-e4
+    
+    //     perform_moves::make_move(52, 36); // e7-e5
+
+    //     perform_moves::make_move(5, 26); //bf1-c4
+
+    //     perform_moves::make_move(51, 43); // d7-d6
+
+    //     perform_moves::make_move(26, 53); //bc4-f7+
+
+
+    //     let board = BOARD.lock().unwrap();
+
+    //     assert_eq!(perform_moves::is_check(&board, 0), true);
+    //     assert_eq!(perform_moves::is_check(&board, 1), false);
+
+    //     // print board
+    //     bitboards::print_board(&board);
+    // }
+
+
     #[test]
-    fn test_make_move() {
+    fn test_is_checkmate_stalemate() {
+
+        reset_globals();
 
         perform_moves::make_move(12, 28); // e2-e4
     
@@ -192,47 +230,22 @@ mod tests {
 
         perform_moves::make_move(51, 43); // d7-d6
 
-        perform_moves::make_move(26, 53); //bc4-f7+
+        perform_moves::make_move(3, 21); // Qe1-f3
+
+        perform_moves::make_move(57, 42); // Nb8-c6
+
+        perform_moves::make_move(21, 53); // Qf3-f7#
 
 
         let board = BOARD.lock().unwrap();
 
-        assert_eq!(perform_moves::is_check(&board, 0), true);
+        assert_eq!(perform_moves::is_checkmate_stalemate(&board, 0), true);
 
         // print board
         bitboards::print_board(&board);
     }
 
 
-    // #[test]
-    // fn test_make_move() {
-    //     //perform_moves::is_legal(8, 16); // legal
-    //     perform_moves::make_move(8, 24);
-
-    //     // print board
-    //     bitboards::print_board();
-
-
-    //     perform_moves::make_move(24, 40); // not legal
-
-    //     bitboards::print_board();
-
-    //     perform_moves::make_move(48, 40);
-
-    //     let board = BOARD.lock().unwrap();
-    //     dbg_print_board(board.white_pawns);
-    //     drop(board);
-    //     dbg_print_board(legal_moves::pawn_moves(24));
-
-
-    //     // print board
-    //     bitboards::print_board();
-    // }
-
-    // #[test]
-    // fn test_game_take_input() {
-    //     game();
-    // }
 
     
 }
