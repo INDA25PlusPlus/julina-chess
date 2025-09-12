@@ -79,6 +79,120 @@ pub fn is_legal(cur_square: i8, target_square: i8, board: &Board, to_move: u8) -
 }
 
 
+pub fn simulate_make_move(cur_square: i8, target_square: i8, board: &Board) -> Board{ 
+    // doesn't actually perform the move, just "pretends" to make the move -> for checks of check, checkmate etc.
+
+    // this is slow and requires to make tons of clones, BUT easier to implement for now.
+    // Potential improvement: Create an undo_move() that allows you to keep changing the global board, and then reverse the changes if needed.
+
+    let mut temp_board = board.clone(); // independent copy
+    let cur_mask = 1 << cur_square;
+    let target_mask = 1 << target_square;
+
+    // if capture
+    if (target_mask & temp_board.black_occupied) != 0 {
+        temp_board.black_occupied &= !target_mask;
+        temp_board.black_pawns &= !target_mask;
+        temp_board.black_king &= !target_mask;
+        temp_board.black_queens &= !target_mask;
+        temp_board.black_knights &= !target_mask;
+        temp_board.black_rooks &= !target_mask;
+        temp_board.black_bishops &= !target_mask;
+    }
+    if (target_mask & temp_board.white_occupied) != 0 {
+        temp_board.white_occupied &= !target_mask;
+        temp_board.white_pawns &= !target_mask;
+        temp_board.white_king &= !target_mask;
+        temp_board.white_queens &= !target_mask;
+        temp_board.white_knights &= !target_mask;
+        temp_board.white_rooks &= !target_mask;
+        temp_board.white_bishops &= !target_mask;
+    }
+
+
+    // add piece to target square
+    if (cur_mask & temp_board.white_pawns) != 0 {
+        temp_board.white_occupied |= target_mask;
+        temp_board.white_pawns |= target_mask;
+    }
+
+    if (cur_mask & board.white_king) != 0 {
+        temp_board.white_occupied |= target_mask;
+        temp_board.white_king |= target_mask;
+    }
+
+    if (cur_mask & temp_board.white_queens) != 0 {
+        temp_board.white_occupied |= target_mask;
+        temp_board.white_queens |= target_mask;
+    }
+
+    if (cur_mask & temp_board.white_knights) != 0 {
+        temp_board.white_occupied |= target_mask;
+        temp_board.white_knights |= target_mask;
+    }
+
+    if (cur_mask & temp_board.white_rooks) != 0 {
+        temp_board.white_occupied |= target_mask;
+        temp_board.white_rooks |= target_mask;
+    }
+
+    if (cur_mask & temp_board.white_bishops) != 0 {
+        temp_board.white_occupied |= target_mask;
+        temp_board.white_bishops |= target_mask;
+    }
+
+    if (cur_mask & temp_board.black_pawns) != 0 {
+        temp_board.black_occupied |= target_mask;
+        temp_board.black_pawns |= target_mask;
+    }
+
+    if (cur_mask & temp_board.black_king) != 0 {
+        temp_board.black_occupied |= target_mask;
+        temp_board.black_king |= target_mask;
+    }
+
+    if (cur_mask & temp_board.black_queens) != 0 {
+        temp_board.black_occupied |= target_mask;
+        temp_board.black_queens |= target_mask;
+    }
+
+    if (cur_mask & temp_board.black_knights) != 0 {
+        temp_board.black_occupied |= target_mask;
+        temp_board.black_knights |= target_mask;
+    }
+
+    if (cur_mask & temp_board.black_rooks) != 0 {
+        temp_board.black_occupied |= target_mask;
+        temp_board.black_rooks |= target_mask;
+    }
+
+    if (cur_mask & temp_board.black_bishops) != 0 {
+        temp_board.black_occupied |= target_mask;
+        temp_board.black_bishops |= target_mask;
+    }
+
+     // remove piece from current square
+    temp_board.white_occupied &= !cur_mask;
+    temp_board.white_pawns &= !cur_mask;
+    temp_board.white_king &= !cur_mask;
+    temp_board.white_queens &= !cur_mask;
+    temp_board.white_knights &= !cur_mask;
+    temp_board.white_rooks &= !cur_mask;
+    temp_board.white_bishops &= !cur_mask;
+
+    temp_board.black_occupied &= !cur_mask;
+    temp_board.black_pawns &= !cur_mask;
+    temp_board.black_king &= !cur_mask;
+    temp_board.black_queens &= !cur_mask;
+    temp_board.black_knights &= !cur_mask;
+    temp_board.black_rooks &= !cur_mask;
+    temp_board.black_bishops &= !cur_mask;
+
+
+    return temp_board;
+}
+
+
 
 pub fn make_move(cur_square: i8, target_square: i8) {
 
@@ -205,11 +319,8 @@ pub fn make_move(cur_square: i8, target_square: i8) {
 }
 
 
-pub fn is_check(board: &Board, to_move:u8) -> bool { // call before changing moves
+pub fn checked_squares(board: &Board, to_move: u8) -> u64 {
 
-
-    /* compute ALL potential moves for the color that just moved.
-    Otherwise will not account for discovered checks!*/ 
 
     if to_move == 0 {
 
@@ -220,10 +331,10 @@ pub fn is_check(board: &Board, to_move:u8) -> bool { // call before changing mov
         all_targeted_squares |= bishop_moves(board.white_bishops, &board, to_move);
         all_targeted_squares |= rook_moves(board.white_rooks, &board, to_move);
         all_targeted_squares |= queen_moves(board.white_queens, &board, to_move);
+        all_targeted_squares |= king_moves(board.white_king, &board, to_move);
 
-        if (all_targeted_squares & board.black_king) != 0 {
-            return true;
-        }
+        return all_targeted_squares;
+    
     } else {
 
         let mut all_targeted_squares: u64 = 0;
@@ -233,19 +344,41 @@ pub fn is_check(board: &Board, to_move:u8) -> bool { // call before changing mov
         all_targeted_squares |= bishop_moves(board.black_bishops, &board, to_move);
         all_targeted_squares |= rook_moves(board.black_rooks, &board, to_move);
         all_targeted_squares |= queen_moves(board.black_queens, &board, to_move);
+        all_targeted_squares |= king_moves(board.black_king, &board, to_move);
 
-        if (all_targeted_squares & board.white_king) != 0 {
-            return true;
-        }
+        return all_targeted_squares;
 
     }
 
-    return false;
 
 }
 
 
-pub fn is_checkmate() {
+pub fn is_check(board: &Board, to_move:u8) -> bool { // call before changing moves
 
-    return;
+
+    /* compute ALL potential moves for the color that just moved.
+    Otherwise will not account for discovered checks!*/ 
+
+    if to_move == 0 {
+        return checked_squares(board, to_move) & board.black_king != 0;
+
+    } else {
+        return checked_squares(board, to_move) & board.white_king != 0;
+    }
+
+}
+
+
+pub fn is_checkmate(board: &Board, to_move: u8) -> bool {
+
+
+    
+
+
+
+
+
+
+    return false;
 }
