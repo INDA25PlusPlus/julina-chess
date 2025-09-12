@@ -63,7 +63,7 @@ pub fn king_moves(pos: u64, board: &Board, to_move: u8) -> u64 { // add more che
     let own_occupied = if to_move == 0 {
         board.white_occupied
     } else {
-        board.black_bishops
+        board.black_occupied
     };
 
 
@@ -166,7 +166,7 @@ pub fn helper_rook_moves(square: i8, board: &Board, to_move: u8) -> u64{
         }
     }
 
-    for n in 1..8-cur_col { // iterate left
+    for n in 1..8-cur_col+1 { // iterate left
 
         let new_mask = (cur_mask >> (n-1) & !FILE_A) >> 1;
 
