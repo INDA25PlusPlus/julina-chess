@@ -12,9 +12,7 @@ occupied by opponent's piece (representing a capture)).
 - used to determine which pieces belong to opponent
 */
 
-
-use crate::BOARD;
-use crate::MOVE;
+use crate::Board;
 
 // Masking: https://www.chessprogramming.org/Square_Mapping_Considerations
 const FILE_A: u64 = 0b100000001000000010000000100000001000000010000000100000001;
@@ -27,11 +25,9 @@ const SEVENTH_RANK: u64 = 0xFF000000000000;
 //const FIRST_RANK: u64 = 0x00000000000000FF;
 //const EIGHT_RANK: u64 = 0xFF00000000000000;
 
-pub fn knight_moves(pos: u64) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
+pub fn knight_moves(pos: u64, board: &Board, to_move: u8) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
 
     let mut targeted_squares: u64 = 0u64;
-    let board = BOARD.lock().unwrap();
-    let to_move = *MOVE.lock().unwrap();
 
     let not_a_file = !FILE_A;
     let not_ab_file = !(FILE_A | FILE_B);
@@ -60,24 +56,32 @@ pub fn knight_moves(pos: u64) -> u64 { // masking inspo: https://www.chessprogra
 
 
 
-pub fn king_moves(pos: u64) -> u64 { // add more checks later (for check, checkmate etc.)
+pub fn king_moves(pos: u64, board: &Board, to_move: u8) -> u64 { // add more checks later (for check, checkmate etc.)
 
     let mut targeted_squares: u64 = 0u64;
 
-    targeted_squares |= (pos & !FILE_A) << 7; // up once, left once
-    targeted_squares |= pos << 8; // one once
-    targeted_squares |= (pos & !FILE_H) << 9; // up once, right once
-    targeted_squares |= (pos & !FILE_A) >> 1;
-    targeted_squares |= (pos & !FILE_H) << 1;
-    targeted_squares |= (pos & !FILE_A) >> 9;
-    targeted_squares |= pos >> 8;
-    targeted_squares |= (pos & !FILE_H) >> 7;
+    let own_occupied = if to_move == 0 {
+        board.white_occupied
+    } else {
+        board.black_bishops
+    };
+
+
+    targeted_squares |= ((pos & !FILE_A) << 7 & !own_occupied); // up once, left once
+    targeted_squares |= pos << 8 & !own_occupied; // one once
+    targeted_squares |= (pos & !FILE_H) << 9 & !own_occupied; // up once, right once
+    targeted_squares |= (pos & !FILE_A) >> 1 & !own_occupied;
+    targeted_squares |= (pos & !FILE_H) << 1 & !own_occupied;
+    targeted_squares |= (pos & !FILE_A) >> 9 & !own_occupied;
+    targeted_squares |= pos >> 8 & !own_occupied;
+    targeted_squares |= (pos & !FILE_H) >> 7 & !own_occupied;
+    
 
     return targeted_squares;
 
 }
 
-pub fn rook_moves(pos: u64) -> u64 {
+pub fn rook_moves(pos: u64, board: &Board, to_move: u8) -> u64 {
     let mut targeted_squares = 0u64;
     let mut rooks = pos;
 
@@ -85,17 +89,14 @@ pub fn rook_moves(pos: u64) -> u64 {
         let square = rooks.trailing_zeros() as i8; // gives square of occupied bit, eg. 1110000.trailing_zeros() = 4.
         rooks &= rooks - 1; // removes least significant set bit
 
-        targeted_squares |= helper_rook_moves(square);
+        targeted_squares |= helper_rook_moves(square, &board, to_move);
     }
 
     return targeted_squares;
 }
 
 
-pub fn helper_rook_moves(square: i8) -> u64{
-
-    let board = BOARD.lock().unwrap();
-    let to_move = *MOVE.lock().unwrap();
+pub fn helper_rook_moves(square: i8, board: &Board, to_move: u8) -> u64{
 
     let mut targeted_squares: u64 = 0u64;
 
@@ -193,7 +194,7 @@ pub fn helper_rook_moves(square: i8) -> u64{
 
 
 
-pub fn bishop_moves(pos: u64) -> u64 {
+pub fn bishop_moves(pos: u64, board: &Board, to_move: u8) -> u64 {
     let mut targeted_squares = 0u64;
     let mut bishops = pos;
 
@@ -201,16 +202,14 @@ pub fn bishop_moves(pos: u64) -> u64 {
         let square = bishops.trailing_zeros() as i8; // gives square of occupied bit, eg. 1110000.trailing_zeros() = 4.
         bishops &= bishops - 1; // removes least significant set bit
 
-        targeted_squares |= helper_bishop_moves(square);
+        targeted_squares |= helper_bishop_moves(square, &board, to_move);
     }
 
     return targeted_squares;
 }
 
-pub fn helper_bishop_moves(square: i8) -> u64 {
+pub fn helper_bishop_moves(square: i8, board: &Board, to_move: u8) -> u64 {
 
-    let board = BOARD.lock().unwrap();
-    let to_move = *MOVE.lock().unwrap();
 
     let mut targeted_squares: u64 = 0u64;
 
@@ -318,21 +317,18 @@ pub fn helper_bishop_moves(square: i8) -> u64 {
 }
 
 
-pub fn queen_moves(square: u64) -> u64 { // combine bishop&rook moves
+pub fn queen_moves(square: u64, board: &Board, to_move: u8) -> u64 { // combine bishop&rook moves
 
-    return rook_moves(square) | bishop_moves(square);
+    return rook_moves(square, board, to_move) | bishop_moves(square, board, to_move);
 
 }
 
 
-pub fn pawn_moves(pos: u64) ->u64 {
+pub fn pawn_moves(pos: u64, board: &Board, to_move: u8) ->u64 {
 
     let mut targeted_squares: u64 = 0u64;
-    let to_move = *MOVE.lock().unwrap(); // dereference ()
-    let board = BOARD.lock().unwrap();
 
     let unoccupied = !(board.white_occupied | board.black_occupied);
-
 
     if to_move == 0 {
 

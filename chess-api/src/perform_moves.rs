@@ -27,64 +27,52 @@ pub fn is_legal(cur_square: i8, target_square: i8) -> bool {
     // https://users.rust-lang.org/t/when-is-drop-called-on-mutex/6571/2
 
     if ((cur_mask & board.white_pawns) != 0) && to_move == 0 {
-        drop((board, to_move));
-        return (pawn_moves(cur_square) & target_mask) != 0;
+        return (pawn_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_bishops) != 0) && to_move == 0 {
-        drop((board, to_move));
-        return (bishop_moves(cur_square) & target_mask) != 0;
+        return (bishop_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_knights) != 0) && to_move == 0 {
-        drop((board, to_move));
-        return (knight_moves(cur_square) & target_mask) != 0;
+        return (knight_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_rooks) != 0) && to_move == 0 {
-        drop((board, to_move));
-        return (rook_moves(cur_square) & target_mask) != 0;
+        return (rook_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_queens) != 0) && to_move == 0 {
-        drop((board, to_move));
-        return (queen_moves(cur_square) & target_mask) != 0;
+        return (queen_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.white_king) != 0) && to_move == 0 {
-        drop((board, to_move));
-        return (king_moves(cur_square) & target_mask) != 0;
+        return (king_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
  
     if ((cur_mask & board.black_pawns) != 0) && to_move == 1 {
-        drop((board, to_move));
-        return (pawn_moves(cur_square) & target_mask) != 0;
+        return (pawn_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_bishops) != 0) && to_move == 1 {
-        drop((board, to_move));
-        return (bishop_moves(cur_square) & target_mask) != 0;
+        return (bishop_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_knights) != 0) && to_move == 1 {
-        drop((board, to_move));
-        return (knight_moves(cur_square) & target_mask) != 0;
+        return (knight_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_rooks) != 0) && to_move == 1 {
-        drop((board, to_move));
-        return (rook_moves(cur_square) & target_mask) != 0;
+        return (rook_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_queens) != 0) && to_move == 1 {
-        drop((board, to_move));
-        return (queen_moves(cur_square) & target_mask) != 0;
+        return (queen_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
     if ((cur_mask & board.black_king) != 0) && to_move == 1 {
-        drop((board, to_move));
-        return (king_moves(cur_square) & target_mask) != 0;
+        return (king_moves(cur_mask, &board, to_move) & target_mask) != 0;
     }
 
 
@@ -92,12 +80,16 @@ pub fn is_legal(cur_square: i8, target_square: i8) -> bool {
 }
 
 
-// pub fn read_move(cur_square: String, target_square: String) {
+// pub fn read_current_square(cur_square: String) {
 
 //     // convert string to bit (and check if invalid cur_square or target_square)
 
 
+// }
 
+// pub fn read_target_square(target_square: String) {
+
+    
 // }
 
 
@@ -221,62 +213,51 @@ pub fn make_move(cur_square: i8, target_square: i8) {
 }
 
 
-pub fn is_check(new_square: i8) -> bool { // call before changing moves
+pub fn is_check() -> bool { // call before changing moves
 
-    let new_mask: u64 = 1<<new_square;
     let board = BOARD.lock().unwrap();
     let to_move = *MOVE.lock().unwrap();
 
-    if (new_mask & (board.white_pawns | board.black_pawns)) != 0 {
+    /* compute ALL potential moves for the color that just moved.
+    Otherwise will not account for discovered checks!*/ 
 
-        if to_move == 0 {
-            return (pawn_moves(new_square) & board.black_king) != 0;
-        } else {
-            return (pawn_moves(new_square) & board.white_king) != 0;
+    if to_move == 0 {
+
+        let mut all_targeted_squares: u64 = 0;
+
+        all_targeted_squares |= pawn_moves(board.white_pawns, &board, to_move);
+        all_targeted_squares |= knight_moves(board.white_knights, &board, to_move);
+        all_targeted_squares |= bishop_moves(board.white_bishops, &board, to_move);
+        all_targeted_squares |= rook_moves(board.white_rooks, &board, to_move);
+        all_targeted_squares |= queen_moves(board.white_queens, &board, to_move);
+
+        if (all_targeted_squares & board.black_king) != 0 {
+            return true;
         }
-    }
+    } else {
 
-    if (new_mask & (board.white_bishops | board.black_bishops)) != 0 {
+        let mut all_targeted_squares: u64 = 0;
 
-        if to_move == 0 {
-            return (bishop_moves(new_square) & board.black_king) != 0;
-        } else {
-            return (bishop_moves(new_square) & board.white_king) != 0;
+        all_targeted_squares |= pawn_moves(board.black_pawns, &board, to_move);
+        all_targeted_squares |= knight_moves(board.black_knights, &board, to_move);
+        all_targeted_squares |= bishop_moves(board.black_bishops, &board, to_move);
+        all_targeted_squares |= rook_moves(board.black_rooks, &board, to_move);
+        all_targeted_squares |= queen_moves(board.black_queens, &board, to_move);
+
+        if (all_targeted_squares & board.white_king) != 0 {
+            return true;
         }
+
     }
 
-    if (new_mask & (board.white_rooks | board.black_rooks)) != 0 {
 
-        if to_move == 0 {
-            return (rook_moves(new_square) & board.black_king) != 0;
-        } else {
-            return (rook_moves(new_square) & board.white_king) != 0;
-        }
-    }
-
-    if (new_mask & (board.white_knights | board.black_knights)) != 0 {
-
-        if to_move == 0 {
-            return (knight_moves(new_square) & board.black_king) != 0;
-        } else {
-            return (knight_moves(new_square) & board.white_king) != 0;
-        }
-    }
-
-    if (new_mask & (board.white_queens | board.black_queens)) != 0 {
-
-        if to_move == 0 {
-            return (queen_moves(new_square) & board.black_king) != 0;
-        } else {
-            return (queen_moves(new_square) & board.white_king) != 0;
-        }
-    }
-
-    if (new_mask & (board.white_king | board.black_king)) != 0 {
-
-        return (king_moves(new_square) & (board.white_king | board.black_king)) != 0;
-    }
 
     return false;
 
+}
+
+
+pub fn is_checkmate() {
+
+    return;
 }

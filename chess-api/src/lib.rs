@@ -90,6 +90,7 @@ fn dbg_print_board(bb: u64) { // for debugging and testing
 
 #[cfg(test)] // kompileras endast när tester körs
 mod tests {
+
     use super::*;
    // use crate::{game};
 
@@ -102,33 +103,41 @@ mod tests {
     // }
 
 
+
     #[test]
     fn test_pawn_moves() {
 
-        let result = legal_moves::pawn_moves(1<<8);
+        let board = BOARD.lock().unwrap();
+
+        let result = legal_moves::pawn_moves(1<<8, &board, 0);
         assert_eq!(result, 1<<16 | 1<<24);
-        let result = legal_moves::pawn_moves(1<<60) ;
-        assert_eq!(result, 0);
-        //dbg_print_board(legal_moves::pawn_moves(1<<8 | 1<<9));
+        // let result = legal_moves::pawn_moves(1<<60) ;
+        // assert_eq!(result, 0);
+        dbg_print_board(legal_moves::pawn_moves(1<<8 | 1<<9, &board, 0));
     }
 
     #[test]
     fn test_king_moves() {
 
-        legal_moves::king_moves(1<<30);
+        let board = BOARD.lock().unwrap();
+
+        legal_moves::king_moves(1<<30, &board, 0);
         //dbg_print_board(legal_moves::king_moves(30));
     }
 
     #[test]
     fn test_knight_moves() {
 
-        legal_moves::knight_moves(1<<16);
+        let board = BOARD.lock().unwrap();
+
+        legal_moves::knight_moves(1<<16, &board, 0);
     }
 
     #[test]
     fn test_rook_moves() {
 
-        legal_moves::rook_moves(1<<16);
+        let board = BOARD.lock().unwrap();
+        legal_moves::rook_moves(1<<16, &board, 0);
         // dbg_print_board(legal_moves::rook_moves(1<<24 | 1<<34));
         // dbg_print_board(legal_moves::helper_rook_moves(24));
 
@@ -136,9 +145,10 @@ mod tests {
 
     #[test]
     fn test_bishop_moves() {
-        legal_moves::bishop_moves(1<<0);
-        legal_moves::bishop_moves(1<<8);
-        legal_moves::bishop_moves(1<<63);
+        let board = BOARD.lock().unwrap();
+        legal_moves::bishop_moves(1<<0, &board, 0);
+        legal_moves::bishop_moves(1<<8, &board, 0);
+        legal_moves::bishop_moves(1<<63, &board, 0);
         // dbg_print_board(legal_moves::bishop_moves(1<<30));
         // dbg_print_board(legal_moves::bishop_moves(1<<28));
     }
@@ -146,10 +156,15 @@ mod tests {
     #[test]
     fn test_queen_moves() {
 
-        legal_moves::queen_moves(16);
+        let board = BOARD.lock().unwrap();
+
+        legal_moves::queen_moves(16, &board, 0);
     }
 
-
+    // #[test]
+    // fn test_is_check() {
+    //     perform_moves::is_check();
+    // }
 
 
     // #[test]
