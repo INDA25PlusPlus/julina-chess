@@ -1,8 +1,6 @@
 /*
 For each piece, exists a function returning targeted squares from a square (passed in as parameter).
 
-- is_valid_move() checks that a target square is within board bounds and prevents overflow etc. when performing bit shifts
-
 - BOARD is a global instance of struct Board definied in bitboards.rs
 - `BOARD.white_occupied` and `BOARD.black_occupied` track which squares are occupied by each color.
 - Used to determine if a move is legal (cannot move to a square already occupied by own piece, allow moving to a square
@@ -27,17 +25,6 @@ const SECOND_RANK: u64 = 0b1111111100000000;
 const SEVENTH_RANK: u64 = 0xFF000000000000;
 //const FIRST_RANK: u64 = 0x00000000000000FF;
 //const EIGHT_RANK: u64 = 0xFF00000000000000;
-
-pub fn is_valid_move(cur_square: i8, row_delta: i8, col_delta: i8) -> bool { // prevent moving outside 8x8-board
-
-    if cur_square + 8*row_delta + col_delta < 0 || cur_square + 8*row_delta + col_delta > 63 {
-        return false;
-    }
-    else if cur_square%8 + col_delta < 0 || cur_square%8 + col_delta > 7 {
-        return false;
-    }
-    return true;
-}
 
 pub fn knight_moves(square: i8) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
 
@@ -190,12 +177,6 @@ pub fn rook_moves(square: i8) -> u64{
 
 
 
-
-
-
-
-
-
 pub fn bishop_moves(square: i8) -> u64 {
 
     let board = BOARD.lock().unwrap();
@@ -302,55 +283,6 @@ pub fn bishop_moves(square: i8) -> u64 {
             break;
         }
     }
-
-
-
-
-    // let dirs: [(i8, i8); 4] = [
-    //     (1, -1), // up, left
-    //     (1, 1),
-    //     (-1, -1),
-    //     (-1, 1)
-    // ];
-
-
-
-
-    // for (row_delta, col_delta) in dirs {
-
-    //     let mut n = 1;
-
-
-
-
-    //     while n < 8 {
-
-    //         if is_valid_move(square, row_delta*n, col_delta*n) {
-
-    //             let new_square = square+8*n*row_delta+n*col_delta;
-                
-    //             if (board.white_occupied | board.black_occupied) & (1<<new_square) == 0 { // not occupied
-    //                 targeted_squares |= 1<<new_square;
-    //             }
-
-    //             // If the occupied square is of the opponent's color, add it to targeted squares
-    //             else if to_move == 0 { // white to move, can caputre black's piece
-    //                 targeted_squares |= board.black_occupied & (1<<new_square);
-    //                 break;
-    //             } else if to_move == 1 {
-    //                 targeted_squares |= board.white_occupied & (1<<new_square);
-    //                 break;
-    //             } else {
-    //                 break;
-    //             }
-    //         } else {
-    //             break;
-    //         }
-
-    //         n += 1;
-    //     }
-    // }
-
 
     return targeted_squares;
 }
