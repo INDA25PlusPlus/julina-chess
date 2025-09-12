@@ -77,8 +77,22 @@ pub fn king_moves(pos: u64) -> u64 { // add more checks later (for check, checkm
 
 }
 
+pub fn rook_moves(pos: u64) -> u64 {
+    let mut targeted_squares = 0u64;
+    let mut rooks = pos;
 
-pub fn rook_moves(square: u64) -> u64{
+    while rooks != 0 {
+        let square = rooks.trailing_zeros() as i8; // gives square of occupied bit, eg. 1110000.trailing_zeros() = 4.
+        rooks &= rooks - 1; // removes least significant set bit
+
+        targeted_squares |= helper_rook_moves(square);
+    }
+
+    return targeted_squares;
+}
+
+
+pub fn helper_rook_moves(square: i8) -> u64{
 
     let board = BOARD.lock().unwrap();
     let to_move = *MOVE.lock().unwrap();
@@ -132,16 +146,18 @@ pub fn rook_moves(square: u64) -> u64{
 
     for n in 1..8-cur_col { // iterate right
 
-        if (cur_mask << n & unoccupied) != 0 {
-            targeted_squares |= cur_mask << n & unoccupied;
+        let new_mask = (cur_mask << (n-1) & !FILE_H) << 1;
+
+        if (new_mask & unoccupied) != 0 {
+            targeted_squares |= new_mask & unoccupied;
         }
 
-        else if (cur_mask << n & board.black_occupied) != 0 && (to_move == 0) {
-            targeted_squares |= cur_mask << n & board.black_occupied;
+        else if to_move == 0 {
+            targeted_squares |= new_mask & board.black_occupied;
             break;
         }
-        else if (cur_mask << n & board.white_occupied) != 0 && (to_move == 1) {
-            targeted_squares |= cur_mask << n & board.white_occupied;
+        else if to_move == 1 {
+            targeted_squares |= new_mask & board.white_occupied;
             break;
         }
         else {
@@ -149,18 +165,20 @@ pub fn rook_moves(square: u64) -> u64{
         }
     }
 
-    for n in 1..8-cur_col { // iterate right
+    for n in 1..8-cur_col { // iterate left
 
-        if (cur_mask >> n & unoccupied) != 0 {
-            targeted_squares |= cur_mask >> n & unoccupied;
+        let new_mask = (cur_mask >> (n-1) & !FILE_A) >> 1;
+
+        if (new_mask & unoccupied) != 0 {
+            targeted_squares |= new_mask & unoccupied;
         }
 
-        else if (cur_mask >> n & board.black_occupied) != 0 && (to_move == 0) {
-            targeted_squares |= cur_mask >> n & board.black_occupied;
+        else if to_move == 0 {
+            targeted_squares |= new_mask & board.black_occupied;
             break;
         }
-        else if (cur_mask >> n & board.white_occupied) != 0 && (to_move == 1) {
-            targeted_squares |= cur_mask >> n & board.white_occupied;
+        else if to_move == 1 {
+            targeted_squares |= new_mask & board.white_occupied;
             break;
         }
         else {
