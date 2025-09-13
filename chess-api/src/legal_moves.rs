@@ -12,7 +12,7 @@ occupied by opponent's piece (representing a capture)).
 - used to determine which pieces belong to opponent
 */
 
-use crate::Board;
+use crate::{state::GameState};
 
 // Masking: https://www.chessprogramming.org/Square_Mapping_Considerations
 const FILE_A: u64 = 0b100000001000000010000000100000001000000010000000100000001;
@@ -25,9 +25,11 @@ const SEVENTH_RANK: u64 = 0xFF000000000000;
 //const FIRST_RANK: u64 = 0x00000000000000FF;
 //const EIGHT_RANK: u64 = 0xFF00000000000000;
 
-pub fn knight_moves(pos: u64, board: &Board, to_move: u8) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
+pub fn knight_moves(pos: u64, state: &GameState) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
 
     let mut targeted_squares: u64 = 0u64;
+
+    let board = &state.board;
 
     let not_a_file = !FILE_A;
     let not_ab_file = !(FILE_A | FILE_B);
@@ -44,7 +46,7 @@ pub fn knight_moves(pos: u64, board: &Board, to_move: u8) -> u64 { // masking in
     targeted_squares |= (pos & not_a_file) >> 17;
 
 
-    if to_move == 0 {
+    if state.white_to_move{
         targeted_squares &= !board.white_occupied;
     } else {
         targeted_squares &= !board.black_occupied;
@@ -56,16 +58,17 @@ pub fn knight_moves(pos: u64, board: &Board, to_move: u8) -> u64 { // masking in
 
 
 
-pub fn king_moves(pos: u64, board: &Board, to_move: u8) -> u64 { // add more checks later (for check, checkmate etc.)
+pub fn king_moves(pos: u64, state: &GameState) -> u64 { // add more checks later (for check, checkmate etc.)
 
     let mut targeted_squares: u64 = 0u64;
 
-    let own_occupied = if to_move == 0 {
+    let board = &state.board;
+
+    let own_occupied = if state.white_to_move {
         board.white_occupied
     } else {
         board.black_occupied
     };
-
 
     targeted_squares |= (pos & !FILE_A) << 7 & !own_occupied; // up once, left once
     targeted_squares |= pos << 8 & !own_occupied; // one once
@@ -81,7 +84,7 @@ pub fn king_moves(pos: u64, board: &Board, to_move: u8) -> u64 { // add more che
 
 }
 
-pub fn rook_moves(pos: u64, board: &Board, to_move: u8) -> u64 {
+pub fn rook_moves(pos: u64, state: &GameState) -> u64 {
     let mut targeted_squares = 0u64;
     let mut rooks = pos;
 
@@ -89,16 +92,19 @@ pub fn rook_moves(pos: u64, board: &Board, to_move: u8) -> u64 {
         let square = rooks.trailing_zeros() as i8; // gives square of occupied bit, eg. 1110000.trailing_zeros() = 4.
         rooks &= rooks - 1; // removes least significant set bit
 
-        targeted_squares |= helper_rook_moves(square, &board, to_move);
+        targeted_squares |= helper_rook_moves(square, state);
     }
 
     return targeted_squares;
 }
 
 
-pub fn helper_rook_moves(square: i8, board: &Board, to_move: u8) -> u64{
+pub fn helper_rook_moves(square: i8, state: &GameState) -> u64{
 
     let mut targeted_squares: u64 = 0u64;
+
+    let board = &state.board;
+    let white_to_move = state.white_to_move;
 
     let unoccupied = !(board.white_occupied | board.black_occupied);
 
@@ -114,15 +120,12 @@ pub fn helper_rook_moves(square: i8, board: &Board, to_move: u8) -> u64{
         if (cur_mask << 8*n & unoccupied) != 0 {
             targeted_squares |= cur_mask << 8*n & unoccupied;
         }
-        else if (cur_mask << 8*n & board.black_occupied) != 0 && (to_move == 0) {
+        else if white_to_move{
             targeted_squares |= cur_mask << 8*n & board.black_occupied;
             break;
         }
-        else if (cur_mask << 8*n & board.white_occupied) != 0 && (to_move == 1) {
+        else if !white_to_move {
             targeted_squares |= cur_mask << 8*n & board.white_occupied;
-            break;
-        }
-        else {
             break;
         }
     }
@@ -132,57 +135,48 @@ pub fn helper_rook_moves(square: i8, board: &Board, to_move: u8) -> u64{
         if (cur_mask >> 8*n & unoccupied) != 0 {
             targeted_squares |= cur_mask >> 8*n & unoccupied;
         }
-        else if (cur_mask >> 8*n & board.black_occupied) != 0 && (to_move == 0) {
+        else if white_to_move {
             targeted_squares |= cur_mask >> 8*n & board.black_occupied;
             break;
         }
-        else if (cur_mask >> 8*n & board.white_occupied) != 0 && (to_move == 1) {
+        else if !white_to_move {
             targeted_squares |= cur_mask >> 8*n & board.white_occupied;
-            break;
-        }
-        else {
             break;
         }
     }
 
     for n in 1..8-cur_col { // iterate right
 
-        let new_mask = (cur_mask << (n-1) & !FILE_H) << 1;
+        let new_mask = cur_mask << n;
 
         if (new_mask & unoccupied) != 0 {
             targeted_squares |= new_mask & unoccupied;
         }
 
-        else if to_move == 0 {
+        else if white_to_move {
             targeted_squares |= new_mask & board.black_occupied;
             break;
         }
-        else if to_move == 1 {
+        else if !white_to_move {
             targeted_squares |= new_mask & board.white_occupied;
-            break;
-        }
-        else {
             break;
         }
     }
 
     for n in 1..8-cur_col+1 { // iterate left
 
-        let new_mask = (cur_mask >> (n-1) & !FILE_A) >> 1;
+        let new_mask = cur_mask >> n;
 
         if (new_mask & unoccupied) != 0 {
             targeted_squares |= new_mask & unoccupied;
         }
 
-        else if to_move == 0 {
+        else if white_to_move {
             targeted_squares |= new_mask & board.black_occupied;
             break;
         }
-        else if to_move == 1 {
+        else if !white_to_move {
             targeted_squares |= new_mask & board.white_occupied;
-            break;
-        }
-        else {
             break;
         }
     }
@@ -194,7 +188,7 @@ pub fn helper_rook_moves(square: i8, board: &Board, to_move: u8) -> u64{
 
 
 
-pub fn bishop_moves(pos: u64, board: &Board, to_move: u8) -> u64 {
+pub fn bishop_moves(pos: u64, state: &GameState) -> u64 {
     let mut targeted_squares = 0u64;
     let mut bishops = pos;
 
@@ -202,16 +196,19 @@ pub fn bishop_moves(pos: u64, board: &Board, to_move: u8) -> u64 {
         let square = bishops.trailing_zeros() as i8; // gives square of occupied bit, eg. 1110000.trailing_zeros() = 4.
         bishops &= bishops - 1; // removes least significant set bit
 
-        targeted_squares |= helper_bishop_moves(square, &board, to_move);
+        targeted_squares |= helper_bishop_moves(square, state);
     }
 
     return targeted_squares;
 }
 
-pub fn helper_bishop_moves(square: i8, board: &Board, to_move: u8) -> u64 {
+pub fn helper_bishop_moves(square: i8, state: &GameState) -> u64 {
 
 
     let mut targeted_squares: u64 = 0u64;
+
+    let board = &state.board;
+    let white_to_move = state.white_to_move;
 
     let unoccupied = !(board.white_occupied | board.black_occupied);
 
@@ -221,30 +218,27 @@ pub fn helper_bishop_moves(square: i8, board: &Board, to_move: u8) -> u64 {
     let cur_col = square % 8;
     let cur_mask = 1 << square;
 
-    let max_up_right = 8-cur_row.min(8-cur_col); // limited by row and column
-    let max_up_left = 8-cur_row.min(cur_col+1);
+    let max_up_right = (8-cur_row).min(8-cur_col); // limited by row and column
+    let max_up_left = (8-cur_row).min(cur_col+1);
 
-    let max_down_right = cur_row+1.min(8-cur_col);
-    let max_down_left = cur_row+1.min(cur_col+1);
+    let max_down_right = (cur_row+1).min(8-cur_col);
+    let max_down_left = (cur_row+1).min(cur_col+1);
 
 
     for n in 1..max_up_right { // iterate up, right
 
         // 8*n+n = 9*n
-        let new_mask = (cur_mask << 9*(n-1) & !FILE_H) << 9;
+        let new_mask = cur_mask << 9*n;
 
         if (new_mask & unoccupied) != 0 {
             targeted_squares |= new_mask & unoccupied;
         }
-        else if to_move == 0 {
+        else if white_to_move {
             targeted_squares |= new_mask & board.black_occupied;
             break;
         }
-        else if to_move == 1 {
+        else if !white_to_move {
             targeted_squares |= new_mask & board.white_occupied;
-            break;
-        }
-        else {
             break;
         }
     }
@@ -253,20 +247,17 @@ pub fn helper_bishop_moves(square: i8, board: &Board, to_move: u8) -> u64 {
 
         // 8*n - n = 7*n
 
-        let new_mask = (cur_mask << 7*(n-1) & !FILE_A) << 7;
+        let new_mask = cur_mask << 7*n;
 
         if (new_mask & unoccupied) != 0 {
             targeted_squares |= new_mask & unoccupied;
         }
-        else if to_move == 0 {
+        else if white_to_move {
             targeted_squares |= new_mask & board.black_occupied;
             break;
         }
-        else if to_move == 1 {
+        else if !white_to_move {
             targeted_squares |= new_mask & board.white_occupied;
-        }
-        else {
-            break;
         }
     }
 
@@ -274,20 +265,17 @@ pub fn helper_bishop_moves(square: i8, board: &Board, to_move: u8) -> u64 {
 
         //  7*n
 
-        let new_mask = (cur_mask >> 7*(n-1) & !FILE_H) >> 7 ;
+        let new_mask = cur_mask >> 7*n ;
 
         if (new_mask & unoccupied) != 0 {
             targeted_squares |= new_mask & unoccupied;
         }
-        else if to_move == 0 {
+        else if white_to_move {
             targeted_squares |= new_mask & board.black_occupied;
             break;
         }
-        else if to_move == 1 {
+        else if !white_to_move {
             targeted_squares |= new_mask & board.white_occupied;
-        }
-        else {
-            break;
         }
     }
 
@@ -295,20 +283,17 @@ pub fn helper_bishop_moves(square: i8, board: &Board, to_move: u8) -> u64 {
 
         // 9*n
 
-        let new_mask = (cur_mask >> 9*(n-1) & !FILE_A) >> 9;
+        let new_mask = cur_mask >> 9*n;
 
         if (new_mask & unoccupied) != 0 {
             targeted_squares |= new_mask & unoccupied;
         }
-        else if to_move == 0 {
+        else if white_to_move {
             targeted_squares |= new_mask & board.black_occupied;
             break;
         }
-        else if to_move == 1 {
+        else if !white_to_move {
             targeted_squares |= new_mask & board.white_occupied;
-            break;
-        }
-        else {
             break;
         }
     }
@@ -317,20 +302,22 @@ pub fn helper_bishop_moves(square: i8, board: &Board, to_move: u8) -> u64 {
 }
 
 
-pub fn queen_moves(square: u64, board: &Board, to_move: u8) -> u64 { // combine bishop&rook moves
+pub fn queen_moves(square: u64, state: &GameState) -> u64 { // combine bishop&rook moves
 
-    return rook_moves(square, board, to_move) | bishop_moves(square, board, to_move);
+    return rook_moves(square, state) | bishop_moves(square, state);
 
 }
 
 
-pub fn pawn_moves(pos: u64, board: &Board, to_move: u8) ->u64 {
+pub fn pawn_moves(pos: u64, state: &GameState) ->u64 {
 
     let mut targeted_squares: u64 = 0u64;
 
+    let board = &state.board;
+
     let unoccupied = !(board.white_occupied | board.black_occupied);
 
-    if to_move == 0 {
+    if state.white_to_move {
 
         let one_step = pos << 8 & unoccupied;
         let two_steps = (((SECOND_RANK << 8) & one_step) << 8) & unoccupied;

@@ -79,6 +79,10 @@ impl Board { // https://doc.rust-lang.org/stable/book/ch05-03-method-syntax.html
             black_occupied: BLACK_OCCUPIED,
         }
     }
+
+    pub fn reset(&mut self) {
+        *self = Board::new();
+    }
 }
 
 

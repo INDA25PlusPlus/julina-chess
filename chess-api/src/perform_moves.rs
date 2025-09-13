@@ -5,12 +5,11 @@ use crate::legal_moves::knight_moves;
 use crate::legal_moves::pawn_moves;
 use crate::legal_moves::queen_moves;
 use crate::legal_moves::rook_moves;
-use crate::Board;
-use crate::BOARD;
-use crate::MOVE;
+use crate::state::GameState;
 
 
-pub fn is_legal(cur_square: i8, target_square: i8, board: &Board, to_move: u8) -> bool {
+
+pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
 
     if cur_square < 0 || cur_square > 63 || target_square < 0 || target_square > 63 {
         return false;
@@ -25,83 +24,85 @@ pub fn is_legal(cur_square: i8, target_square: i8, board: &Board, to_move: u8) -
     // https://users.rust-lang.org/t/when-is-drop-called-on-mutex/6571/2
 
 
+    let board = &state.board;
     let mut legal_piece_movement: bool = false;
 
 
-    if ((cur_mask & board.white_pawns) != 0) && to_move == 0 {
-        legal_piece_movement = (pawn_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.white_pawns) != 0) && state.white_to_move {
+        legal_piece_movement = (pawn_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.white_bishops) != 0) && to_move == 0 {
-        legal_piece_movement = (bishop_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.white_bishops) != 0) && state.white_to_move {
+        legal_piece_movement = (bishop_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.white_knights) != 0) && to_move == 0 {
-        legal_piece_movement = (knight_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.white_knights) != 0) && state.white_to_move {
+        legal_piece_movement = (knight_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.white_rooks) != 0) && to_move == 0 {
-        legal_piece_movement = (rook_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.white_rooks) != 0) && state.white_to_move {
+        legal_piece_movement = (rook_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.white_queens) != 0) && to_move == 0 {
-        legal_piece_movement = (queen_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.white_queens) != 0) && state.white_to_move {
+        legal_piece_movement = (queen_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.white_king) != 0) && to_move == 0 {
-        legal_piece_movement = (king_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.white_king) != 0) && state.white_to_move {
+        legal_piece_movement = (king_moves(cur_mask, &state) & target_mask) != 0;
     }
  
-    if ((cur_mask & board.black_pawns) != 0) && to_move == 1 {
-        legal_piece_movement = (pawn_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.black_pawns) != 0) && !state.white_to_move {
+        legal_piece_movement = (pawn_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.black_bishops) != 0) && to_move == 1 {
-        legal_piece_movement = (bishop_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.black_bishops) != 0) && !state.white_to_move {
+        legal_piece_movement = (bishop_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.black_knights) != 0) && to_move == 1 {
-        legal_piece_movement = (knight_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.black_knights) != 0) && !state.white_to_move {
+        legal_piece_movement = (knight_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.black_rooks) != 0) && to_move == 1 {
-        legal_piece_movement = (rook_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.black_rooks) != 0) && !state.white_to_move {
+        legal_piece_movement = (rook_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.black_queens) != 0) && to_move == 1 {
-        legal_piece_movement = (queen_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.black_queens) != 0) && !state.white_to_move {
+        legal_piece_movement = (queen_moves(cur_mask, &state) & target_mask) != 0;
     }
 
-    if ((cur_mask & board.black_king) != 0) && to_move == 1 {
-        legal_piece_movement = (king_moves(cur_mask, &board, to_move) & target_mask) != 0;
+    if ((cur_mask & board.black_king) != 0) && !state.white_to_move {
+        legal_piece_movement = (king_moves(cur_mask, &state) & target_mask) != 0;
     }
 
     if !legal_piece_movement {
         return false;
     }
 
-    let simulated_board = simulate_make_move(cur_square, target_square, board);
+    let simulated_state = &mut simulate_make_move(cur_square, target_square, state);
 
-    if to_move == 0 && is_check(&simulated_board, 1) {
+    simulated_state.white_to_move = !simulated_state.white_to_move;
+
+    if is_check(&simulated_state) {
         return false; // white king would be in check
-    }
-    if to_move == 1 && is_check(&simulated_board, 0) {
-        return false; // black king would be in check
     }
 
     return true;
 }
 
 
-pub fn simulate_make_move(cur_square: i8, target_square: i8, board: &Board) -> Board{ 
+pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) -> GameState{ 
     // doesn't actually perform the move, just "pretends" to make the move -> for checks of check, checkmate etc.
 
     // this is slow and requires to make tons of clones, BUT easier to implement for now.
     // Potential improvement: Create an undo_move() that allows you to keep changing the global board, and then reverse the changes if needed.
 
-    let mut temp_board = board.clone(); // independent copy
+    let mut temp_state = state.clone(); // independent copy
     let cur_mask = 1 << cur_square;
     let target_mask = 1 << target_square;
+
+    let temp_board = &mut temp_state.board;
 
     // if capture
     if (target_mask & temp_board.black_occupied) != 0 {
@@ -203,21 +204,21 @@ pub fn simulate_make_move(cur_square: i8, target_square: i8, board: &Board) -> B
     temp_board.black_bishops &= !cur_mask;
 
 
-    return temp_board;
+    return temp_state;
 }
 
 
-pub fn make_move(cur_square: i8, target_square: i8) {
+pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState) {
 
-    let mut board = BOARD.lock().unwrap();
-    let mut to_move = MOVE.lock().unwrap(); 
     let cur_mask: u64 = 1<<cur_square;
     let target_mask: u64 = 1<<target_square;
 
-    if !is_legal(cur_square, target_square, &board, *to_move) {
+    if !is_legal(cur_square, target_square, &state) {
         print!("{}", "Invalid move.\n");
         return;
     }
+
+    let board = &mut state.board;
 
 
     // if capture
@@ -320,36 +321,40 @@ pub fn make_move(cur_square: i8, target_square: i8) {
     board.black_bishops &= !cur_mask;
 
 
-    if is_checkmate_stalemate(&board, *to_move) {
-        if is_check(&board, *to_move) {
+    if is_checkmate_stalemate(state) {
+        if is_check(state){
             print!("CHECKMATE\n");
         } else {
             print!("STALEMATE\n");
         }
 
+        state.reset(); // reset the game
+        return;
     }
 
     // toggle turns
-    *to_move = (*to_move+1)%2;
+    state.white_to_move = !state.white_to_move;
 
     return;
 
 }
 
 
-pub fn checked_squares(board: &Board, to_move: u8) -> u64 {
+pub fn checked_squares(state: &GameState) -> u64 {
 
 
-    if to_move == 0 {
+    let board = &state.board;
+
+    if state.white_to_move {
 
         let mut all_targeted_squares: u64 = 0;
 
-        all_targeted_squares |= pawn_moves(board.white_pawns, &board, to_move);
-        all_targeted_squares |= knight_moves(board.white_knights, &board, to_move);
-        all_targeted_squares |= bishop_moves(board.white_bishops, &board, to_move);
-        all_targeted_squares |= rook_moves(board.white_rooks, &board, to_move);
-        all_targeted_squares |= queen_moves(board.white_queens, &board, to_move);
-        all_targeted_squares |= king_moves(board.white_king, &board, to_move);
+        all_targeted_squares |= pawn_moves(board.white_pawns, state);
+        all_targeted_squares |= knight_moves(board.white_knights, state);
+        all_targeted_squares |= bishop_moves(board.white_bishops, state);
+        all_targeted_squares |= rook_moves(board.white_rooks, state);
+        all_targeted_squares |= queen_moves(board.white_queens, state);
+        all_targeted_squares |= king_moves(board.white_king, state);
 
         return all_targeted_squares;
     
@@ -357,12 +362,12 @@ pub fn checked_squares(board: &Board, to_move: u8) -> u64 {
 
         let mut all_targeted_squares: u64 = 0;
 
-        all_targeted_squares |= pawn_moves(board.black_pawns, &board, to_move);
-        all_targeted_squares |= knight_moves(board.black_knights, &board, to_move);
-        all_targeted_squares |= bishop_moves(board.black_bishops, &board, to_move);
-        all_targeted_squares |= rook_moves(board.black_rooks, &board, to_move);
-        all_targeted_squares |= queen_moves(board.black_queens, &board, to_move);
-        all_targeted_squares |= king_moves(board.black_king, &board, to_move);
+        all_targeted_squares |= pawn_moves(board.black_pawns, state);
+        all_targeted_squares |= knight_moves(board.black_knights, state);
+        all_targeted_squares |= bishop_moves(board.black_bishops, state);
+        all_targeted_squares |= rook_moves(board.black_rooks, state);
+        all_targeted_squares |= queen_moves(board.black_queens, state);
+        all_targeted_squares |= king_moves(board.black_king, state);
 
         return all_targeted_squares;
 
@@ -372,42 +377,48 @@ pub fn checked_squares(board: &Board, to_move: u8) -> u64 {
 }
 
 
-pub fn is_check(board: &Board, to_move:u8) -> bool { // call before changing moves
-
+pub fn is_check(state: &GameState) -> bool { // call before changing moves
 
     /* compute ALL potential moves for the color that just moved.
     Otherwise will not account for discovered checks!*/ 
 
-    if to_move == 0 {
-        return checked_squares(board, to_move) & board.black_king != 0;
+    let board = &state.board;
+
+    if state.white_to_move {
+        return checked_squares(state) & board.black_king != 0;
 
     } else {
-        return checked_squares(board, to_move) & board.white_king != 0;
+        return checked_squares(state) & board.white_king != 0;
     }
 
 }
 
 
-pub fn is_checkmate_stalemate(board: &Board, to_move: u8) -> bool {
-
+pub fn is_checkmate_stalemate(state: &mut GameState) -> bool {
     
     // try all possible moves
     // to_move is the player who just made a move. (to_move+1)%2 gives the other player's move
+
+    let mut state_clone = state.clone();
+    state_clone.white_to_move  = !state_clone.white_to_move;
 
     for cur_square in 0..64 {
         
         for target_square in 0..64 {
 
-            if is_legal(cur_square, target_square, board, (to_move+1)%2) {
-                let new_board = simulate_make_move(cur_square, target_square, board);
-                if !is_check(&new_board, to_move) {
+        
+            if is_legal(cur_square, target_square, &state_clone) {
+                let new_state = &mut simulate_make_move(cur_square, target_square, &state_clone);
+                new_state.white_to_move = !new_state.white_to_move;
+                if !is_check(&new_state) {
                     return false;
                 }
 
             }
         }
     }
-
     return true;
-
 }
+
+
+
