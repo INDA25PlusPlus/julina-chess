@@ -17,7 +17,7 @@ pub struct GameState {
     pub white_can_castle_queenside: bool,
     pub black_can_castle_kingside: bool,
     pub black_can_castle_queenside: bool,
-    pub en_passant_square: Option<u64>, 
+    pub en_passant_mask: u64, 
     pub white_to_move: bool,
 }
 
@@ -29,7 +29,7 @@ impl GameState {
             white_can_castle_queenside: true,
             black_can_castle_kingside: true,
             black_can_castle_queenside: true,
-            en_passant_square: None,
+            en_passant_mask: 0,
             white_to_move: true,
         }
     }

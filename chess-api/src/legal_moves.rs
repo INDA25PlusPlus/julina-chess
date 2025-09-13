@@ -317,12 +317,15 @@ pub fn pawn_moves(pos: u64, state: &GameState) ->u64 {
 
     let unoccupied = !(board.white_occupied | board.black_occupied);
 
+    let en_passant_mask = state.en_passant_mask;
+
     if state.white_to_move {
 
         let one_step = pos << 8 & unoccupied;
         let two_steps = (((SECOND_RANK << 8) & one_step) << 8) & unoccupied;
-        let capture_left = board.black_occupied & ((pos&!FILE_A) << 7);
-        let capture_right = board.black_occupied & ((pos&!FILE_H) << 9);
+        let capture_left = (board.black_occupied | en_passant_mask) & ((pos&!FILE_A) << 7);
+        let capture_right = (board.black_occupied | en_passant_mask) & ((pos&!FILE_H) << 9);
+
 
         targeted_squares |= one_step | two_steps | capture_left | capture_right;
      
@@ -330,8 +333,8 @@ pub fn pawn_moves(pos: u64, state: &GameState) ->u64 {
 
         let one_step = pos >> 8 & unoccupied;
         let two_steps = (((SEVENTH_RANK >> 8) & one_step) >> 8) & unoccupied;
-        let capture_left = board.white_occupied & ((pos&!FILE_A) >> 9);
-        let capture_right = board.white_occupied & ((pos&!FILE_H) >> 7);
+        let capture_left = (board.white_occupied | en_passant_mask) & ((pos&!FILE_A) >> 9);
+        let capture_right = (board.white_occupied | en_passant_mask) & ((pos&!FILE_H) >> 7);
 
         targeted_squares |= one_step | two_steps | capture_left | capture_right;
         

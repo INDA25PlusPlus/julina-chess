@@ -7,7 +7,8 @@ use crate::legal_moves::queen_moves;
 use crate::legal_moves::rook_moves;
 use crate::state::GameState;
 
-
+const SECOND_RANK: u64 = 0b1111111100000000; 
+const SEVENTH_RANK: u64 = 0xFF000000000000;
 
 pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
 
@@ -208,14 +209,16 @@ pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) 
 }
 
 
-pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState) {
+pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_reset: bool) -> bool{
+
+    // stop_reset is set to true during testing
 
     let cur_mask: u64 = 1<<cur_square;
     let target_mask: u64 = 1<<target_square;
 
     if !is_legal(cur_square, target_square, &state) {
         print!("{}", "Invalid move.\n");
-        return;
+        return false;
     }
 
     let board = &mut state.board;
@@ -328,17 +331,72 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState) {
             print!("STALEMATE\n");
         }
 
-        state.reset(); // reset the game
-        return;
+        if !stop_reset {
+            state.reset(); // reset the game
+        }
+        return true;
     }
+
+    en_passant(target_square, state);
+    update_en_passant_square(cur_square, target_square, state);
+
+
 
     // toggle turns
     state.white_to_move = !state.white_to_move;
 
-    return;
+    return true;
 
 }
 
+
+pub fn en_passant(target_square: i8, state: &mut GameState) { // checks if the move made was en passant -> update opponent occupied squares
+
+    let target_mask: u64 = 1<<target_square;
+
+    if target_mask == state.en_passant_mask {
+
+        if state.white_to_move {
+
+            state.board.black_pawns &= !(target_mask >> 8);
+            state.board.black_occupied &= !(target_mask >> 8);
+
+        } else {
+
+            state.board.white_pawns &= !(target_mask << 8);
+            state.board.white_occupied &= !(target_mask << 8);
+        }
+    }
+
+
+}
+
+pub fn update_en_passant_square(cur_square: i8, target_square: i8, state: &mut GameState) {
+
+    let cur_mask = 1<<cur_square;
+    let target_mask: u64 = 1<<target_square;
+
+
+    if (target_mask & state.board.white_pawns) != 0 {
+
+        if (cur_mask & SECOND_RANK) != 0 && target_square-cur_square==16 {
+
+            state.en_passant_mask = 1<< cur_square+8;
+        }
+
+
+    } else if (target_mask & state.board.black_pawns)!= 0 {
+        
+        if (cur_mask & SEVENTH_RANK) != 0 && cur_square-target_square==16 {
+            
+            state.en_passant_mask = 1<<(cur_square-8);
+        }
+
+    } else {
+        state.en_passant_mask = 0;
+    }
+
+}
 
 pub fn checked_squares(state: &GameState) -> u64 {
 

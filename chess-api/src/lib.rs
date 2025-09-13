@@ -6,59 +6,6 @@ pub mod legal_moves;
 pub mod state;
 
 
-
-#[allow(dead_code)]
-fn game() {
-
-    // take input in rust: https://users.rust-lang.org/t/how-to-get-user-input/5176/3
-    use std::io::{stdin,stdout,Write};
-
-    let mut s = String::new();
-    let mut current = String::new();
-    let mut target = String::new();
-
-
-    loop {
-        print!("Enter q to quit");
-
-        let _=stdout().flush();
-        stdin().read_line(&mut s).expect("Did not enter a correct string");
-
-        if let Some('\n')=s.chars().next_back() {
-            s.pop();
-        }
-        if let Some('\r')=s.chars().next_back() {
-            s.pop();
-        }
-
-        if s == "q".to_string() {
-            break;
-        } else {
-            print!("Enter square from where to move");
-            current.clear();
-            stdin().read_line(&mut current).expect("Did not enter a correct string");
-            
-
-            print!("Enter square to where to move");
-            target.clear();
-            stdin().read_line(&mut target).expect("Did not enter a correct string");
-
-
-        }
-        println!("You typed: {}",s);
-
-
-        s.clear();
-
-
-    }
-
-}
-
-
-
-     
-
 #[allow(dead_code)] // (only used in tests)
 fn dbg_print_board(bb: u64) { // for debugging and testing
 
@@ -216,36 +163,53 @@ mod tests {
 
         let mut state = GameState::new();
 
-        perform_moves::make_move(12, 28, &mut state); // e2-e4
+        perform_moves::make_move(12, 28, &mut state, true); // e2-e4
     
-        perform_moves::make_move(52, 36, &mut state); // e7-e5
+        perform_moves::make_move(52, 36, &mut state, true); // e7-e5
 
-        perform_moves::make_move(5, 26, &mut state); //bf1-c4
+        perform_moves::make_move(5, 26, &mut state, true); //bf1-c4
 
-        perform_moves::make_move(51, 43, &mut state); // d7-d6
+        perform_moves::make_move(51, 43, &mut state, true); // d7-d6
 
-        perform_moves::make_move(3, 21, &mut state); // Qe1-f3
+        perform_moves::make_move(3, 21, &mut state, true); // Qe1-f3
 
-        perform_moves::make_move(57, 42, &mut state); // Nb8-c6
+        perform_moves::make_move(57, 42, &mut state, true); // Nb8-c6
 
-        perform_moves::make_move(21, 53, &mut state); // Qf3-f7#
+        perform_moves::make_move(21, 53, &mut state, true); // Qf3-f7#
 
-        state.white_to_move = true;
-        dbg_print_board(legal_moves::queen_moves(1<<53, &state));
+        // state.white_to_move = true;
+        // dbg_print_board(legal_moves::queen_moves(1<<53, &state));
         // println!("Black occupied: \n");
         // dbg_print_board(state.board.black_occupied);
         // println!("Black occupied: \n");
         // dbg_print_board(state.board.white_occupied);
-        //bitboards::print_board(&state.board);
         
 
-        // state.white_to_move = true;
-        // assert_eq!(perform_moves::is_checkmate_stalemate(&mut state), true);
+        state.white_to_move = true;
+        assert_eq!(perform_moves::is_checkmate_stalemate(&mut state), true);
 
         // // print board
         // bitboards::print_board(&state.board);
     }
 
+    #[test]
+    fn test_en_passant() {
+
+        let mut state = GameState::new();
+
+        let move_made = perform_moves::make_move(12, 28, &mut state, true); // e2-e4
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(57, 42, &mut state, true); // Nb8-c6
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(28, 36, &mut state, true); // e4-e5
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(51, 35, &mut state, true); // d7-d5
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(36, 43, &mut state, true); // e5xd6
+        assert_eq!(move_made, true);
+
+        bitboards::print_board(&state.board);
+    }
 
 
     
