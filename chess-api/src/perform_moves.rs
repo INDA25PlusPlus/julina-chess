@@ -6,6 +6,7 @@ use crate::legal_moves::pawn_moves;
 use crate::legal_moves::queen_moves;
 use crate::legal_moves::rook_moves;
 use crate::state::GameState;
+use crate::bitboards::Board;
 
 const SECOND_RANK: u64 = 0b1111111100000000; 
 const SEVENTH_RANK: u64 = 0xFF000000000000;
@@ -106,103 +107,13 @@ pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) 
     let temp_board = &mut temp_state.board;
 
     // if capture
-    if (target_mask & temp_board.black_occupied) != 0 {
-        temp_board.black_occupied &= !target_mask;
-        temp_board.black_pawns &= !target_mask;
-        temp_board.black_king &= !target_mask;
-        temp_board.black_queens &= !target_mask;
-        temp_board.black_knights &= !target_mask;
-        temp_board.black_rooks &= !target_mask;
-        temp_board.black_bishops &= !target_mask;
-    }
-    if (target_mask & temp_board.white_occupied) != 0 {
-        temp_board.white_occupied &= !target_mask;
-        temp_board.white_pawns &= !target_mask;
-        temp_board.white_king &= !target_mask;
-        temp_board.white_queens &= !target_mask;
-        temp_board.white_knights &= !target_mask;
-        temp_board.white_rooks &= !target_mask;
-        temp_board.white_bishops &= !target_mask;
-    }
-
+    capture(target_mask, temp_board);
 
     // add piece to target square
-    if (cur_mask & temp_board.white_pawns) != 0 {
-        temp_board.white_occupied |= target_mask;
-        temp_board.white_pawns |= target_mask;
-    }
-
-    if (cur_mask & temp_board.white_king) != 0 {
-        temp_board.white_occupied |= target_mask;
-        temp_board.white_king |= target_mask;
-    }
-
-    if (cur_mask & temp_board.white_queens) != 0 {
-        temp_board.white_occupied |= target_mask;
-        temp_board.white_queens |= target_mask;
-    }
-
-    if (cur_mask & temp_board.white_knights) != 0 {
-        temp_board.white_occupied |= target_mask;
-        temp_board.white_knights |= target_mask;
-    }
-
-    if (cur_mask & temp_board.white_rooks) != 0 {
-        temp_board.white_occupied |= target_mask;
-        temp_board.white_rooks |= target_mask;
-    }
-
-    if (cur_mask & temp_board.white_bishops) != 0 {
-        temp_board.white_occupied |= target_mask;
-        temp_board.white_bishops |= target_mask;
-    }
-
-    if (cur_mask & temp_board.black_pawns) != 0 {
-        temp_board.black_occupied |= target_mask;
-        temp_board.black_pawns |= target_mask;
-    }
-
-    if (cur_mask & temp_board.black_king) != 0 {
-        temp_board.black_occupied |= target_mask;
-        temp_board.black_king |= target_mask;
-    }
-
-    if (cur_mask & temp_board.black_queens) != 0 {
-        temp_board.black_occupied |= target_mask;
-        temp_board.black_queens |= target_mask;
-    }
-
-    if (cur_mask & temp_board.black_knights) != 0 {
-        temp_board.black_occupied |= target_mask;
-        temp_board.black_knights |= target_mask;
-    }
-
-    if (cur_mask & temp_board.black_rooks) != 0 {
-        temp_board.black_occupied |= target_mask;
-        temp_board.black_rooks |= target_mask;
-    }
-
-    if (cur_mask & temp_board.black_bishops) != 0 {
-        temp_board.black_occupied |= target_mask;
-        temp_board.black_bishops |= target_mask;
-    }
+    fill_target_square(cur_mask, target_mask, temp_board);
 
      // remove piece from current square
-    temp_board.white_occupied &= !cur_mask;
-    temp_board.white_pawns &= !cur_mask;
-    temp_board.white_king &= !cur_mask;
-    temp_board.white_queens &= !cur_mask;
-    temp_board.white_knights &= !cur_mask;
-    temp_board.white_rooks &= !cur_mask;
-    temp_board.white_bishops &= !cur_mask;
-
-    temp_board.black_occupied &= !cur_mask;
-    temp_board.black_pawns &= !cur_mask;
-    temp_board.black_king &= !cur_mask;
-    temp_board.black_queens &= !cur_mask;
-    temp_board.black_knights &= !cur_mask;
-    temp_board.black_rooks &= !cur_mask;
-    temp_board.black_bishops &= !cur_mask;
+    empty_current_square(cur_mask, temp_board);
 
 
     return temp_state;
@@ -225,6 +136,42 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_
 
 
     // if capture
+    capture(target_mask, board);
+
+    // add piece to target square
+    fill_target_square(cur_mask, target_mask, board);
+
+     // remove piece from current square
+    empty_current_square(cur_mask, board);
+
+
+    if is_checkmate_stalemate(state) {
+        if is_check(state){
+            print!("CHECKMATE\n");
+        } else {
+            print!("STALEMATE\n");
+        }
+
+        if !stop_reset {
+            state.reset(); // reset the game
+        }
+        return true;
+    }
+
+    en_passant(target_mask, state);
+    update_en_passant_square(cur_square, target_square, state);
+
+
+    // toggle turns
+    state.white_to_move = !state.white_to_move;
+
+    return true;
+
+}
+
+
+pub fn capture(target_mask: u64, board: &mut Board) {
+
     if (target_mask & board.black_occupied) != 0 {
         board.black_occupied &= !target_mask;
         board.black_pawns &= !target_mask;
@@ -243,9 +190,10 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_
         board.white_rooks &= !target_mask;
         board.white_bishops &= !target_mask;
     }
+}
 
+pub fn fill_target_square(cur_mask: u64, target_mask: u64, board: &mut Board) {
 
-    // add piece to target square
     if (cur_mask & board.white_pawns) != 0 {
         board.white_occupied |= target_mask;
         board.white_pawns |= target_mask;
@@ -306,7 +254,9 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_
         board.black_bishops |= target_mask;
     }
 
-     // remove piece from current square
+}
+
+pub fn empty_current_square(cur_mask: u64, board: &mut Board) {
     board.white_occupied &= !cur_mask;
     board.white_pawns &= !cur_mask;
     board.white_king &= !cur_mask;
@@ -322,37 +272,9 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_
     board.black_knights &= !cur_mask;
     board.black_rooks &= !cur_mask;
     board.black_bishops &= !cur_mask;
-
-
-    if is_checkmate_stalemate(state) {
-        if is_check(state){
-            print!("CHECKMATE\n");
-        } else {
-            print!("STALEMATE\n");
-        }
-
-        if !stop_reset {
-            state.reset(); // reset the game
-        }
-        return true;
-    }
-
-    en_passant(target_square, state);
-    update_en_passant_square(cur_square, target_square, state);
-
-
-
-    // toggle turns
-    state.white_to_move = !state.white_to_move;
-
-    return true;
-
 }
 
-
-pub fn en_passant(target_square: i8, state: &mut GameState) { // checks if the move made was en passant -> update opponent occupied squares
-
-    let target_mask: u64 = 1<<target_square;
+pub fn en_passant(target_mask: u64, state: &mut GameState) { // checks if the move made was en passant -> update opponent occupied squares
 
     if target_mask == state.en_passant_mask {
 
@@ -433,7 +355,6 @@ pub fn checked_squares(state: &GameState) -> u64 {
 
 
 }
-
 
 pub fn is_check(state: &GameState) -> bool { // call before changing moves
 
