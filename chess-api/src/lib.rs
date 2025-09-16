@@ -57,7 +57,7 @@ mod tests {
 
         let state = GameState::new();
 
-        legal_moves::king_moves(1<<30, &state);
+        legal_moves::king_moves(1<<30, &state, true);
         //dbg_print_board(legal_moves::king_moves(1<<60, &board, 1));
     }
 
@@ -66,7 +66,12 @@ mod tests {
 
         let state = GameState::new();
 
-        legal_moves::knight_moves(1<<16, &state);
+        //legal_moves::knight_moves(1<<16, &state);
+        let result = legal_moves::knight_moves(1<<0, &state); // a1
+        assert_eq!(result, 1<<17);
+        let result = legal_moves::knight_moves(1<<7, &state); // h1
+        assert_eq!(result, 1<<22);
+    
     }
 
     #[test]
@@ -128,34 +133,32 @@ mod tests {
 
 
 
-    // #[test]
-    // fn test_make_move() {
+    #[test]
+    fn test_make_move() {
 
-    //     let mut state = GameState::new();
+        let mut state = GameState::new();
 
-    //     perform_moves::make_move(12, 28, &mut state); // e2-e4
+        perform_moves::make_move(12, 28, &mut state, true); // e2-e4
     
-    //     perform_moves::make_move(52, 36, &mut state); // e7-e5
+        perform_moves::make_move(52, 36, &mut state, true); // e7-e5
 
-    //     perform_moves::make_move(5, 26, &mut state); //bf1-c4
+        perform_moves::make_move(5, 26, &mut state, true); //bf1-c4
 
-    //     perform_moves::make_move(51, 43, &mut state); // d7-d6
+        perform_moves::make_move(51, 43, &mut state, true); // d7-d6
 
-    //     perform_moves::make_move(26, 53, &mut state); //bc4-f7+
+        perform_moves::make_move(26, 53, &mut state, true); //bc4-f7+
 
 
-    //     let result = perform_moves::is_legal(55, 47, &state); // doesnt handle the check --> not legal
+        let result = perform_moves::is_legal(55, 47, &state); // doesnt handle the check --> not legal
 
-    //     assert_eq!(result, false);
+        assert_eq!(result, false);
 
-    //     state.white_to_move = true;
-    //     assert_eq!(perform_moves::is_check(&state), true);
-    //     state.white_to_move = false;
-    //     assert_eq!(perform_moves::is_check(&state), false);
+        state.white_to_move = true;
+        assert_eq!(perform_moves::is_check(&state), true);
+        state.white_to_move = false;
+        assert_eq!(perform_moves::is_check(&state), false);
 
-    //     // print board
-    //     bitboards::print_board(&state.board);
-    // }
+    }
 
 
     #[test]
@@ -208,9 +211,66 @@ mod tests {
         let move_made = perform_moves::make_move(36, 43, &mut state, true); // e5xd6
         assert_eq!(move_made, true);
 
-        bitboards::print_board(&state.board);
     }
 
+    #[test]
+    fn test_castling() {
+
+        let mut state = GameState::new();
+
+        // white and black king-side
+
+        let move_made = perform_moves::make_move(12, 28, &mut state, true); // e2-e4
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(52, 36, &mut state, true); // e7-e5
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(6, 21, &mut state, true); // Ng1-f3
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(57, 42, &mut state, true); // Nb8-c6
+        assert_eq!(move_made, true);
+        let move_made =perform_moves::make_move(5, 26, &mut state, true); //bf1-c4
+        assert_eq!(move_made, true); 
+        let move_made =perform_moves::make_move(62, 45, &mut state, true); //Ng8-f6
+        assert_eq!(move_made, true); 
+        let move_made =perform_moves::make_move(4, 6, &mut state, true); // 0-0 white
+        assert_eq!(move_made, true); 
+        let move_made =perform_moves::make_move(61, 52, &mut state, true); // Bf8-e7
+        assert_eq!(move_made, true); 
+        let move_made =perform_moves::make_move(11, 19, &mut state, true); // d2-d3
+        assert_eq!(move_made, true); 
+        let move_made =perform_moves::make_move(60, 62, &mut state, true); // 0-0 black
+        assert_eq!(move_made, true); 
+
+        //bitboards::print_board(&state.board);
+
+        state.reset();
+
+
+        // white and black queen-side
+        let move_made = perform_moves::make_move(11, 27, &mut state, true); // d2-d4
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(51, 35, &mut state, true); // d7-d5
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(2, 29, &mut state, true); // Bc1-f4
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(57, 42, &mut state, true); // Nb8-c6
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(1, 18, &mut state, true); // Nb1-c3
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(58, 44, &mut state, true); // Bc8-e6
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(3, 11, &mut state, true); // Qd1-d2
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(59, 51, &mut state, true); // Qd8-d7
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(4, 2, &mut state, true); // 0-0-0 white
+        assert_eq!(move_made, true);
+        let move_made = perform_moves::make_move(60, 58, &mut state, true); // 0-0-0 black
+        assert_eq!(move_made, true);
+
+        bitboards::print_board(&state.board);
+
+    }
 
     
 }

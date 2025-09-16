@@ -51,7 +51,7 @@ pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
     }
 
     if ((cur_mask & board.white_king) != 0) && state.white_to_move {
-        legal_piece_movement = (king_moves(cur_mask, &state) & target_mask) != 0;
+        legal_piece_movement = (king_moves(cur_mask, &state, true) & target_mask) != 0;
     }
  
     if ((cur_mask & board.black_pawns) != 0) && !state.white_to_move {
@@ -75,7 +75,7 @@ pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
     }
 
     if ((cur_mask & board.black_king) != 0) && !state.white_to_move {
-        legal_piece_movement = (king_moves(cur_mask, &state) & target_mask) != 0;
+        legal_piece_movement = (king_moves(cur_mask, &state, true) & target_mask) != 0;
     }
 
     if !legal_piece_movement {
@@ -92,7 +92,6 @@ pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
 
     return true;
 }
-
 
 pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) -> GameState{ 
     // doesn't actually perform the move, just "pretends" to make the move -> for checks of check, checkmate etc.
@@ -118,7 +117,6 @@ pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) 
 
     return temp_state;
 }
-
 
 pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_reset: bool) -> bool{
 
@@ -161,6 +159,9 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_
     en_passant(target_mask, state);
     update_en_passant_square(cur_square, target_square, state);
 
+    castle(cur_square, target_square, state);
+    update_castling_rights(cur_square, state);
+
 
     // toggle turns
     state.white_to_move = !state.white_to_move;
@@ -168,7 +169,6 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_
     return true;
 
 }
-
 
 pub fn capture(target_mask: u64, board: &mut Board) {
 
@@ -320,6 +320,77 @@ pub fn update_en_passant_square(cur_square: i8, target_square: i8, state: &mut G
 
 }
 
+pub fn castle(cur_square: i8, target_square: i8, state: &mut GameState) {
+    
+    //let cur_mask = 1<<cur_square;
+    let target_mask: u64 = 1<<target_square;
+
+    if (target_mask & state.board.white_king) != 0 {
+
+        if cur_square == 4 && target_square == 6 { // king-side castling
+
+            // rook on h1 to f1
+            state.board.white_rooks |= 1<<5;
+            state.board.white_rooks &= !(1<<7);
+        }
+
+        else if cur_square == 4 && target_square == 2 { // queen-side castling
+
+            // rook on a1 to d1
+            state.board.white_rooks |= 1<<3;
+            state.board.white_rooks &= !(1<<0);
+        }
+
+
+    } else if (target_mask & state.board.black_king) != 0 {
+
+        if cur_square == 60 && target_square == 62  {// king-side
+
+            // rook on h8 to f8
+            state.board.black_rooks |= 1<<61;
+            state.board.black_rooks &= !(1<<63);
+        }
+
+        else if cur_square == 60 && target_square == 58 { // queen-side
+
+            // rook on a8 to c8
+            state.board.black_rooks |= 1<<59;
+            state.board.black_rooks &= !(1<<56);
+
+        }
+
+    }
+
+}
+
+pub fn update_castling_rights(cur_square: i8, state: &mut GameState) {
+
+    if cur_square == 0 { // rook on a1
+        state.white_can_castle_queenside = false;
+    }
+    else if cur_square == 4 { // king on e1
+        state.white_can_castle_kingside = false;
+        state.white_can_castle_queenside = false;
+    }
+    else if cur_square == 7 { // rook on h1
+        state.white_can_castle_kingside = false;
+    }
+    else if cur_square == 56 { // rook on a8
+        state.black_can_castle_queenside = false;
+    }
+    else if cur_square == 60 { // king on e8
+        state.black_can_castle_kingside = false;
+        state.black_can_castle_queenside = false;
+    }
+    else if cur_square == 63 { // rook on h8
+        state.black_can_castle_kingside = false;
+    }
+
+
+} 
+
+
+
 pub fn checked_squares(state: &GameState) -> u64 {
 
 
@@ -334,7 +405,7 @@ pub fn checked_squares(state: &GameState) -> u64 {
         all_targeted_squares |= bishop_moves(board.white_bishops, state);
         all_targeted_squares |= rook_moves(board.white_rooks, state);
         all_targeted_squares |= queen_moves(board.white_queens, state);
-        all_targeted_squares |= king_moves(board.white_king, state);
+        all_targeted_squares |= king_moves(board.white_king, state, false);
 
         return all_targeted_squares;
     
@@ -347,7 +418,7 @@ pub fn checked_squares(state: &GameState) -> u64 {
         all_targeted_squares |= bishop_moves(board.black_bishops, state);
         all_targeted_squares |= rook_moves(board.black_rooks, state);
         all_targeted_squares |= queen_moves(board.black_queens, state);
-        all_targeted_squares |= king_moves(board.black_king, state);
+        all_targeted_squares |= king_moves(board.black_king, state, false);
 
         return all_targeted_squares;
 

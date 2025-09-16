@@ -12,7 +12,7 @@ occupied by opponent's piece (representing a capture)).
 - used to determine which pieces belong to opponent
 */
 
-use crate::{state::GameState};
+use crate::{perform_moves::checked_squares, state::GameState};
 
 // Masking: https://www.chessprogramming.org/Square_Mapping_Considerations
 const FILE_A: u64 = 0b100000001000000010000000100000001000000010000000100000001;
@@ -58,7 +58,7 @@ pub fn knight_moves(pos: u64, state: &GameState) -> u64 { // masking inspo: http
 
 
 
-pub fn king_moves(pos: u64, state: &GameState) -> u64 { // add more checks later (for check, checkmate etc.)
+pub fn king_moves(pos: u64, state: &GameState, include_castling: bool) -> u64 { // add more checks later (for check, checkmate etc.)
 
     let mut targeted_squares: u64 = 0u64;
 
@@ -78,9 +78,91 @@ pub fn king_moves(pos: u64, state: &GameState) -> u64 { // add more checks later
     targeted_squares |= (pos & !FILE_A) >> 9 & !own_occupied;
     targeted_squares |= pos >> 8 & !own_occupied;
     targeted_squares |= (pos & !FILE_H) >> 7 & !own_occupied;
+
+
+    if include_castling {   // Prevents infinite recursion (since castling() calls checked_squares(), which in turn calls king_moves())
+
+        let cur_square = pos.trailing_zeros() as i8;
+        targeted_squares |= castling(cur_square, state);
+
+
+    }
+
+
+    return targeted_squares
+
+}
+
+
+pub fn castling(cur_square: i8, state: &GameState) -> u64{
+
+
+    let mut targets = 0;
+    let occupied = state.board.white_occupied | state.board.black_occupied;
+
+    let mut state_copy = state.clone();
+    state_copy.white_to_move = !state_copy.white_to_move;
+
+    if state.white_to_move && cur_square == 4{
+
+
+        if state.white_can_castle_kingside {
+
+            // check squares in between
+            let in_between_mask = 1<<5 | 1<<6;
+
+            if (in_between_mask & occupied) == 0 {
+
+                if (checked_squares(&state_copy) & (in_between_mask | 1<<4)) == 0{
+                    targets |= 1<<6;
+                }
+            }
+
+        }
+
+        if state.white_can_castle_queenside {
+
+            let in_between_mask = 1<<1 | 1<<2 | 1<<3;
+
+            if (in_between_mask & occupied) == 0 {
+
+                if (checked_squares(&state_copy) & (in_between_mask | 1<<4)) == 0{
+                    targets |= 1<<2;
+                }
+            }
+        }
+    }
     
 
-    return targeted_squares;
+    else if !state.white_to_move && cur_square == 60 {
+
+        if state.black_can_castle_kingside {
+
+            let in_between_mask = 1<<61 | 1<<62;
+
+            if (in_between_mask & occupied) == 0 {
+
+                if (checked_squares(&state_copy) & (in_between_mask | 1<<60)) == 0 {
+                    targets |= 1<<62;
+                }
+            }
+        }
+        
+
+        if state.black_can_castle_queenside {
+
+            let in_between_mask = 1<<59 | 1<<58 | 1<<57;
+
+            if (in_between_mask & occupied) == 0 {
+
+                if (checked_squares(&state_copy) & (in_between_mask | 1<<60)) == 0 {
+                    targets |= 1 << 58;
+                }
+            }
+        }  
+    }
+
+    return targets;
 
 }
 
