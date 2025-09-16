@@ -10,6 +10,10 @@ use crate::bitboards::Board;
 
 const SECOND_RANK: u64 = 0b1111111100000000; 
 const SEVENTH_RANK: u64 = 0xFF000000000000;
+const FIRST_RANK: u64 = 0x00000000000000FF;
+const EIGHT_RANK: u64 = 0xFF00000000000000;
+
+use std::io::{self, Write}; // take input, got some help from Arvid Kristofferson on how to take input in rust
 
 pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
 
@@ -143,6 +147,17 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_
     empty_current_square(cur_mask, board);
 
 
+    en_passant(target_mask, state);
+    update_en_passant_square(cur_square, target_square, state);
+
+    castle(cur_square, target_square, state);
+    update_castling_rights(cur_square, state);
+
+    promotion(target_square, state);
+
+
+    // CHECK FOR CHECKMATE LAST
+
     if is_checkmate_stalemate(state) {
         if is_check(state){
             print!("CHECKMATE\n");
@@ -155,12 +170,6 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_
         }
         return true;
     }
-
-    en_passant(target_mask, state);
-    update_en_passant_square(cur_square, target_square, state);
-
-    castle(cur_square, target_square, state);
-    update_castling_rights(cur_square, state);
 
 
     // toggle turns
@@ -272,6 +281,84 @@ pub fn empty_current_square(cur_mask: u64, board: &mut Board) {
     board.black_knights &= !cur_mask;
     board.black_rooks &= !cur_mask;
     board.black_bishops &= !cur_mask;
+}
+
+pub fn promotion(target_square: i8, state: &mut GameState){
+
+    let target_mask = 1<<target_square;
+
+    let promoted_pawns = if state.white_to_move {
+        target_mask & state.board.white_pawns & EIGHT_RANK
+    } else {
+        target_mask & state.board.black_pawns & FIRST_RANK
+    };
+
+    if promoted_pawns == 0 {
+        return; // no promoted pawn
+    }
+
+    loop {
+
+        print!("PROMOTE pawn on square {} to (Q, R, B, N)\n", target_square);
+        io::stdout().flush().unwrap();
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+
+        let promotion_piece = input.trim().to_uppercase();
+
+         // Remove the pawn from its bitboard
+        if state.white_to_move {
+            state.board.white_pawns &= !target_mask;
+        } else {
+            state.board.black_pawns &= !target_mask;
+        }
+
+        // Add the promoted piece
+        let valid = match promotion_piece.as_str() {
+            "Q" => {
+                if state.white_to_move {
+                    state.board.white_queens |= target_mask;
+                } else {
+                    state.board.black_queens |= target_mask;
+                }
+                true
+            }
+            "R" => {
+                if state.white_to_move {
+                    state.board.white_rooks |= target_mask;
+                } else {
+                    state.board.black_rooks |= target_mask;
+                }
+                true
+            }
+            "B" => {
+                if state.white_to_move {
+                    state.board.white_bishops |= target_mask;
+                } else {
+                    state.board.black_bishops |= target_mask;
+                }
+                true
+            }
+            "N" => {
+                if state.white_to_move {
+                    state.board.white_knights |= target_mask;
+                } else {
+                    state.board.black_knights |= target_mask;
+                }
+                true
+            }
+            _ => {
+                println!("Invalid choice, please enter Q, R, B, or N.");
+                false
+            }
+        };
+
+        if valid {
+                    break;
+                }
+    }
+
 }
 
 pub fn en_passant(target_mask: u64, state: &mut GameState) { // checks if the move made was en passant -> update opponent occupied squares

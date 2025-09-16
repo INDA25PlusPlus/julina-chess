@@ -268,9 +268,39 @@ mod tests {
         let move_made = perform_moves::make_move(60, 58, &mut state, true); // 0-0-0 black
         assert_eq!(move_made, true);
 
-        bitboards::print_board(&state.board);
+        //bitboards::print_board(&state.board);
 
     }
 
+
+    #[test]
+    fn test_promotion() {
+
+        let mut state = GameState::new();
+        let board = &mut state.board;
+
+        // change position such that we have an endgame of some type
+        board.white_bishops = 0;
+        board.white_pawns = 0;
+        board.white_rooks = 0;
+        board.white_knights = 0;
+        board.white_occupied = 0;
+        board.white_queens = 0;
+        board.white_occupied |= 1<<4;
+
+        board.black_pawns &= !(1<<48); // remove pawn from a7
+        board.black_pawns |= 1<<8; // add pawn to a2
+        board.black_occupied |= 1<<8;
+        
+        state.white_to_move = false; // black to move
+        
+        // test if black can promote pawn on a1.
+        let move_made = perform_moves::make_move(8, 0, &mut state, true);
+        assert_eq!(move_made, true);
+
+
+        bitboards::print_board(&state.board);
+
+    }
     
 }

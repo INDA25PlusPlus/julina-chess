@@ -22,8 +22,6 @@ const FILE_G: u64 = 0b1000000010000000100000001000000010000000100000001000000010
 
 const SECOND_RANK: u64 = 0b1111111100000000; 
 const SEVENTH_RANK: u64 = 0xFF000000000000;
-//const FIRST_RANK: u64 = 0x00000000000000FF;
-//const EIGHT_RANK: u64 = 0xFF00000000000000;
 
 pub fn knight_moves(pos: u64, state: &GameState) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
 
@@ -403,7 +401,7 @@ pub fn pawn_moves(pos: u64, state: &GameState) ->u64 {
 
     if state.white_to_move {
 
-        let one_step = pos << 8 & unoccupied;
+        let one_step = (pos << 8) & unoccupied;
         let two_steps = (((SECOND_RANK << 8) & one_step) << 8) & unoccupied;
         let capture_left = (board.black_occupied | en_passant_mask) & ((pos&!FILE_A) << 7);
         let capture_right = (board.black_occupied | en_passant_mask) & ((pos&!FILE_H) << 9);
@@ -413,7 +411,7 @@ pub fn pawn_moves(pos: u64, state: &GameState) ->u64 {
      
     } else {
 
-        let one_step = pos >> 8 & unoccupied;
+        let one_step = (pos >> 8) & unoccupied;
         let two_steps = (((SEVENTH_RANK >> 8) & one_step) >> 8) & unoccupied;
         let capture_left = (board.white_occupied | en_passant_mask) & ((pos&!FILE_A) >> 9);
         let capture_right = (board.white_occupied | en_passant_mask) & ((pos&!FILE_H) >> 7);
