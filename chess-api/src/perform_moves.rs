@@ -8,6 +8,7 @@ use crate::legal_moves::rook_moves;
 use crate::state::GameState;
 use crate::bitboards::Board;
 use crate::state::Color;
+use crate::state::History;
 
 const SECOND_RANK: u64 = 0b1111111100000000; 
 const SEVENTH_RANK: u64 = 0xFF000000000000;
@@ -95,53 +96,62 @@ pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
         return false;
     }
 
-    let simulated_state = &mut simulate_make_move(cur_square, target_square, state);
+    // let simulated_state = &mut simulate_make_move(cur_square, target_square, state);
 
-    if is_check(&simulated_state, side.opposite()) {
-        return false; // white king would be in check
-    }
+    // if is_check(&simulated_state, side.opposite()) {
+    //     return false; // white king would be in check
+    // }
 
     return true;
 }
 
-pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) -> GameState{ 
-    // doesn't actually perform the move, just "pretends" to make the move -> for checks of check, checkmate etc.
+// pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) -> GameState{ 
+//     // doesn't actually perform the move, just "pretends" to make the move -> for checks of check, checkmate etc.
 
-    // this is slow and requires making lots of clones, BUT easier to implement for now.
-    // Potential improvement: Create an undo_move() that allows you to keep changing the global board, and then reverse the changes if needed.
+//     // this is slow and requires making lots of clones, BUT easier to implement for now.
+//     // Potential improvement: Create an undo_move() that allows you to keep changing the global board, and then reverse the changes if needed.
 
-    let mut temp_state = state.clone(); // independent copy
-    let cur_mask = 1 << cur_square;
-    let target_mask = 1 << target_square;
+//     let mut temp_state = state.clone(); // independent copy
+//     let cur_mask = 1 << cur_square;
+//     let target_mask = 1 << target_square;
 
-    let temp_board = &mut temp_state.board;
+//     let temp_board = &mut temp_state.board;
 
-    // if capture
-    capture(target_mask, temp_board);
+//     // if capture
+//     capture(target_mask, temp_board);
 
-    // add piece to target square
-    fill_square(cur_mask, target_mask, temp_board);
+//     // add piece to target square
+//     fill_square(cur_mask, target_mask, temp_board);
 
-     // remove piece from current square
-    empty_square(cur_mask, temp_board);
-
-
-    return temp_state;
-}
+//      // remove piece from current square
+//     empty_square(cur_mask, temp_board);
 
 
+//     return temp_state;
+// }
 
-pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_reset: bool) -> bool{
+
+
+pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, history: &mut History, stop_reset: bool) -> bool{
 
     // stop_reset is set to true during testing
 
     let cur_mask: u64 = 1<<cur_square;
     let target_mask: u64 = 1<<target_square;
 
+
+    // is_legal checks if the player has a piece on cur_square that can be moved to target_square
+    // is_legal does NOT account for self-check
     if !is_legal(cur_square, target_square, &state) {
         print!("{}", "Invalid move.\n");
         return false;
     }
+
+
+    // save current state to history
+    history.push(state.clone());
+
+
 
     let board = &mut state.board;
 
@@ -166,13 +176,30 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_
     promotion(target_square, state);
 
 
-    // CHECK FOR CHECKMATE LAST
+
+    // toggle turn temporarily
+    let side = state.side_to_move;
+    let opponent = side.opposite();
+
+
+    // Check self-check
+    if is_check(state, opponent) {
+
+        print!("SELFCHECK\n");
+        // Undo move using history
+        if let Some(prev) = history.pop() {
+            *state = prev;
+        }
+
+        return false;
+    }
 
 
     // toggle turns
     state.side_to_move = state.side_to_move.opposite(); 
 
 
+    // CHECK FOR CHECKMATE LAST
 
     // Now it's the opponent's move, but first we check if they can make a move,
     // If not, it's either checkmate or stalemate.
@@ -589,33 +616,198 @@ pub fn is_check(state: &GameState, side_checking: Color) -> bool {
 }
 
 pub fn is_checkmate_stalemate(state: &mut GameState) -> bool {
-    
+
+    let side = state.side_to_move;
+    let opposite_side = side.opposite();
+
     // try all possible moves for the opponent
     // state.side_to_move is the opponent's color, eg. if white just made the move,
     // state.side_to_move = Color::Black.
 
-    for cur_square in 0..64 { // Iterate through all possible cur_square, target_square (can be optimized)
-        
-        for target_square in 0..64 { 
 
-        
-            if is_legal(cur_square, target_square, state) { // If the opponent can move the piece 
+    for cur_square in 0..64 {
+        for target_square in 0..64 {
 
-                // simulate them making the move
-                let new_state = &mut simulate_make_move(cur_square, target_square, state);
+            if !is_legal(cur_square, target_square, state) {
+                continue;
+            }
 
-                // now the opponent has made the simulated move, and new_state represents the new board. Now we 
-                // want to check if the player who just made a move, that is state.side_to_move.opponent(), is 
-                // checking the player in the simulated position.
-                // If not, they have an escape, and are not checkmated/stalemated
-    
-                if !is_check(new_state, new_state.side_to_move.opposite()) {
-                    return false;
-                }
+            // Perform the move in-place and record captured piece
+            let cur_mask = 1 << cur_square;
+            let target_mask = 1 << target_square;
 
+            // capture
+            let piece_captured = capture(target_mask, &mut state.board);
+
+            // move the piece
+            fill_square(cur_mask, target_mask, &mut state.board);
+            empty_square(cur_mask, &mut state.board);
+            
+            castle(cur_square, target_square, state);
+
+
+            // Check if after this move, the side that just moved is NOT in check
+            let in_check = is_check(state, opposite_side);
+
+            // Undo the move
+            undo_move(cur_square, target_square, state, opposite_side, piece_captured);
+
+            // If at least one legal move exists that avoids check, it's NOT checkmate/stalemate
+            if !in_check {
+                return false;
             }
         }
     }
-    return true;
+
+    // No escape moves found → checkmate or stalemate
+    true
 }
 
+
+
+pub fn undo_move(original_square: i8, new_square: i8, state: &mut GameState, side: Color, piece_captured: Option<i8>) {
+
+    let original_mask = 1<<original_square;
+    let new_mask = 1<<new_square;
+
+    // undo castling
+    undo_castle(original_square, new_square, state);
+
+    // fill the original square with the piece.
+    fill_square(new_mask, original_mask, &mut state.board);
+
+    // empty the new_square
+    empty_square(new_mask, &mut state.board);
+
+    // fill new square with captured piece
+    restore_captured_piece(new_mask, state, side, piece_captured);
+
+}
+
+pub fn restore_captured_piece(new_mask: u64, state: &mut GameState, side: Color, piece_captured: Option<i8>) {
+
+    let board = &mut state.board;
+
+    match piece_captured {
+
+        None => return,
+
+        // pawn was captured
+        Some(1) => {
+
+            match side {
+
+                Color::White => {
+                    board.white_pawns |= new_mask;
+                    board.white_occupied |= new_mask;
+                }
+                Color::Black => {
+                    board.black_pawns |= new_mask;
+                    board.black_occupied |= new_mask;
+                }
+            }
+        }
+        // knight was captured
+        Some(2) => {
+            match side {
+
+                Color::White => {
+                    board.white_knights |= new_mask;
+                    board.white_occupied |= new_mask;
+                }
+                Color::Black => {
+                    board.black_knights |= new_mask;
+                    board.black_occupied |= new_mask;
+                }
+            }
+        }
+        // bishop was captured
+        Some(3) => {
+            match side {
+
+                Color::White => {
+                    board.white_bishops |= new_mask;
+                    board.white_occupied |= new_mask;
+                }
+                Color::Black => {
+                    board.black_bishops |= new_mask;
+                    board.black_occupied |= new_mask;
+                }
+            }
+        }
+
+        // rook was captured
+        Some(4) => {
+            match side {
+
+                Color::White => {
+                    board.white_rooks |= new_mask;
+                    board.white_occupied |= new_mask;
+                }
+                Color::Black => {
+                    board.black_rooks |= new_mask;
+                    board.black_occupied |= new_mask;
+                }
+            }
+        }
+
+        // queen was captured
+        Some(5) => {
+            match side {
+
+                Color::White => {
+                    board.white_queens |= new_mask;
+                    board.white_occupied |= new_mask;
+                }
+                Color::Black => {
+                    board.black_queens |= new_mask;
+                    board.black_occupied |= new_mask;
+                }
+            }
+        }
+        Some(_) => return,
+    }
+}
+
+
+pub fn undo_castle(original_square: i8, new_square: i8, state: &mut GameState) {
+
+    let new_mask = 1<<new_square;
+
+    let board = &mut state.board;
+
+
+    if new_mask & board.white_king != 0 {
+
+        if original_square == 4 && new_square == 6 { // kingside
+
+            // move rook from f1 to h1
+            board.white_rooks &= !(1<<5);
+            board.white_rooks |= 1<<7;
+        }
+
+        if original_square == 4 && new_square == 2 { // queenside
+
+            // move rook from d1 to a1
+            board.white_rooks &= !(1<<3);
+            board.white_rooks |= 1<<0;
+        }
+    }
+
+    else if new_mask & board.black_king != 0 {
+
+        if original_square == 60 && new_square == 62  {// king-side
+
+            // rook on f8 to h8
+            board.black_rooks &= !(1<<61);
+            state.board.black_rooks |= 1<<63;
+        }
+
+        else if original_square == 60 && new_square == 58 { // queen-side
+
+            // rook on d8 to a8
+            state.board.black_rooks &= !(1<<59);
+            state.board.black_rooks |= 1<<56;
+        }
+    }
+}

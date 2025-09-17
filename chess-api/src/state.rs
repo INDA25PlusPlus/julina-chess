@@ -9,9 +9,12 @@ Allows you to manage the game state cleanly without relying on eg. static mut (t
 */
 
 use crate::bitboards::Board;
+use std::array;
+
+const MAX_GAME_MOVES: usize = 200;
 
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Color {
     White,
     Black,
@@ -55,5 +58,54 @@ impl GameState {
 
     pub fn reset(&mut self) {
         *self = GameState::new();
+    }
+}
+
+
+// Game history taken from: https://rustic-chess.org/board_representation/game_history.html
+
+
+pub struct History {
+    list: [GameState; MAX_GAME_MOVES],
+    count: usize,
+}
+
+impl History {
+    // Create a new history array containing game states.
+    pub fn new() -> Self {
+        Self {
+            list: array::from_fn(|_| GameState::new()),
+            count: 0,
+        }
+    }
+
+    // Put a new game state into the array.
+    pub fn push(&mut self, g: GameState) {
+        self.list[self.count] = g;
+        self.count += 1;
+    }
+
+    // Return the last game state and decrement the counter. The game state is
+    // not deleted from the array. If necessary, another game state will just
+    // overwrite it.
+    pub fn pop(&mut self) -> Option<GameState> {
+        if self.count > 0 {
+            self.count -= 1;
+            Some(self.list[self.count].clone()) // must clone since GameState isn't Copy
+        } else {
+            None
+        }
+    }
+
+    pub fn get_ref(&self, index: usize) -> &GameState {
+        &self.list[index]
+    }
+
+    pub fn len(&self) -> usize {
+        self.count
+    }
+
+    pub fn clear(&mut self) {
+        self.count = 0;
     }
 }
