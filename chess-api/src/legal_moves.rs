@@ -12,7 +12,7 @@ occupied by opponent's piece (representing a capture)).
 - used to determine which pieces belong to opponent
 */
 
-use crate::{perform_moves::checked_squares, state::GameState};
+use crate::{perform_moves::checked_squares, state::GameState, state::Color};
 
 // Masking: https://www.chessprogramming.org/Square_Mapping_Considerations
 const FILE_A: u64 = 0b100000001000000010000000100000001000000010000000100000001;
@@ -23,7 +23,7 @@ const FILE_G: u64 = 0b1000000010000000100000001000000010000000100000001000000010
 const SECOND_RANK: u64 = 0b1111111100000000; 
 const SEVENTH_RANK: u64 = 0xFF000000000000;
 
-pub fn knight_moves(pos: u64, state: &GameState) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
+pub fn knight_moves(pos: u64, state: &GameState, side: Color) -> u64 { // masking inspo: https://www.chessprogramming.org/Knight_Pattern
 
     let mut targeted_squares: u64 = 0u64;
 
@@ -44,10 +44,10 @@ pub fn knight_moves(pos: u64, state: &GameState) -> u64 { // masking inspo: http
     targeted_squares |= (pos & not_a_file) >> 17;
 
 
-    if state.white_to_move{
-        targeted_squares &= !board.white_occupied;
-    } else {
-        targeted_squares &= !board.black_occupied;
+    match side {
+
+        Color::White => targeted_squares &= !board.white_occupied,
+        Color::Black => targeted_squares &= !board.black_occupied,
     }
 
     return targeted_squares;
@@ -56,16 +56,15 @@ pub fn knight_moves(pos: u64, state: &GameState) -> u64 { // masking inspo: http
 
 
 
-pub fn king_moves(pos: u64, state: &GameState, include_castling: bool) -> u64 { // add more checks later (for check, checkmate etc.)
+pub fn king_moves(pos: u64, state: &GameState, side: Color, include_castling: bool) -> u64 { // add more checks later (for check, checkmate etc.)
 
     let mut targeted_squares: u64 = 0u64;
 
     let board = &state.board;
 
-    let own_occupied = if state.white_to_move {
-        board.white_occupied
-    } else {
-        board.black_occupied
+    let own_occupied = match side {
+        Color::White => board.white_occupied,
+        Color::Black => board.black_occupied,
     };
 
     targeted_squares |= (pos & !FILE_A) << 7 & !own_occupied; // up once, left once
@@ -78,11 +77,14 @@ pub fn king_moves(pos: u64, state: &GameState, include_castling: bool) -> u64 { 
     targeted_squares |= (pos & !FILE_H) >> 7 & !own_occupied;
 
 
-    if include_castling {   // Prevents infinite recursion (since castling() calls checked_squares(), which in turn calls king_moves())
+    if include_castling && state.side_to_move == side {   
+
+        // bool include_castling prevents infinite recursion (since castling() calls checked_squares(), 
+        // which in turn calls king_moves())
+        // we only need to check castling rights for the current player.
 
         let cur_square = pos.trailing_zeros() as i8;
         targeted_squares |= castling(cur_square, state);
-
 
     }
 
@@ -94,14 +96,23 @@ pub fn king_moves(pos: u64, state: &GameState, include_castling: bool) -> u64 { 
 
 pub fn castling(cur_square: i8, state: &GameState) -> u64{
 
+    /*
+    castling() checks:
+    - that the states white_can_castle_kingside, black_can_castle_queenside etc. are true,
+    - that the king's position is it's original position, and
+    - that the squares in between the rook and the king are unoccupied and unchecked,
+    - that the king is not in check 
+
+    We DON'T pass a side: Color, because castling can only be done if you're not in check -> not relevant
+    to check if the opponent's king can castle when checking for eg. checkmate, because that's never valid.
+    */
 
     let mut targets = 0;
     let occupied = state.board.white_occupied | state.board.black_occupied;
 
-    let mut state_copy = state.clone();
-    state_copy.white_to_move = !state_copy.white_to_move;
+    let opponent_color = state.side_to_move.opposite();
 
-    if state.white_to_move && cur_square == 4{
+    if state.side_to_move == Color::White && cur_square == 4{
 
 
         if state.white_can_castle_kingside {
@@ -111,7 +122,7 @@ pub fn castling(cur_square: i8, state: &GameState) -> u64{
 
             if (in_between_mask & occupied) == 0 {
 
-                if (checked_squares(&state_copy) & (in_between_mask | 1<<4)) == 0{
+                if (checked_squares(state, opponent_color) & (in_between_mask | 1<<4)) == 0{
                     targets |= 1<<6;
                 }
             }
@@ -124,7 +135,7 @@ pub fn castling(cur_square: i8, state: &GameState) -> u64{
 
             if (in_between_mask & occupied) == 0 {
 
-                if (checked_squares(&state_copy) & (in_between_mask | 1<<4)) == 0{
+                if (checked_squares(state, opponent_color) & (in_between_mask | 1<<4)) == 0{
                     targets |= 1<<2;
                 }
             }
@@ -132,7 +143,7 @@ pub fn castling(cur_square: i8, state: &GameState) -> u64{
     }
     
 
-    else if !state.white_to_move && cur_square == 60 {
+    else if state.side_to_move == Color::Black && cur_square == 60 {
 
         if state.black_can_castle_kingside {
 
@@ -140,7 +151,7 @@ pub fn castling(cur_square: i8, state: &GameState) -> u64{
 
             if (in_between_mask & occupied) == 0 {
 
-                if (checked_squares(&state_copy) & (in_between_mask | 1<<60)) == 0 {
+                if (checked_squares(state, opponent_color) & (in_between_mask | 1<<60)) == 0 {
                     targets |= 1<<62;
                 }
             }
@@ -153,7 +164,7 @@ pub fn castling(cur_square: i8, state: &GameState) -> u64{
 
             if (in_between_mask & occupied) == 0 {
 
-                if (checked_squares(&state_copy) & (in_between_mask | 1<<60)) == 0 {
+                if (checked_squares(state, opponent_color) & (in_between_mask | 1<<60)) == 0 {
                     targets |= 1 << 58;
                 }
             }
@@ -164,7 +175,7 @@ pub fn castling(cur_square: i8, state: &GameState) -> u64{
 
 }
 
-pub fn rook_moves(pos: u64, state: &GameState) -> u64 {
+pub fn rook_moves(pos: u64, state: &GameState, side: Color) -> u64 {
     let mut targeted_squares = 0u64;
     let mut rooks = pos;
 
@@ -172,19 +183,22 @@ pub fn rook_moves(pos: u64, state: &GameState) -> u64 {
         let square = rooks.trailing_zeros() as i8; // gives square of occupied bit, eg. 1110000.trailing_zeros() = 4.
         rooks &= rooks - 1; // removes least significant set bit
 
-        targeted_squares |= helper_rook_moves(square, state);
+        targeted_squares |= helper_rook_moves(square, state, side);
     }
 
     return targeted_squares;
 }
 
 
-pub fn helper_rook_moves(square: i8, state: &GameState) -> u64{
+pub fn helper_rook_moves(square: i8, state: &GameState, side: Color) -> u64{
 
     let mut targeted_squares: u64 = 0u64;
 
     let board = &state.board;
-    let white_to_move = state.white_to_move;
+    let white_to_move = match side {
+        Color::White => true,
+        Color::Black => false,
+    };
 
     let unoccupied = !(board.white_occupied | board.black_occupied);
 
@@ -268,7 +282,7 @@ pub fn helper_rook_moves(square: i8, state: &GameState) -> u64{
 
 
 
-pub fn bishop_moves(pos: u64, state: &GameState) -> u64 {
+pub fn bishop_moves(pos: u64, state: &GameState, side: Color) -> u64 {
     let mut targeted_squares = 0u64;
     let mut bishops = pos;
 
@@ -276,19 +290,22 @@ pub fn bishop_moves(pos: u64, state: &GameState) -> u64 {
         let square = bishops.trailing_zeros() as i8; // gives square of occupied bit, eg. 1110000.trailing_zeros() = 4.
         bishops &= bishops - 1; // removes least significant set bit
 
-        targeted_squares |= helper_bishop_moves(square, state);
+        targeted_squares |= helper_bishop_moves(square, state, side);
     }
 
     return targeted_squares;
 }
 
-pub fn helper_bishop_moves(square: i8, state: &GameState) -> u64 {
+pub fn helper_bishop_moves(square: i8, state: &GameState, side: Color) -> u64 {
 
 
     let mut targeted_squares: u64 = 0u64;
 
     let board = &state.board;
-    let white_to_move = state.white_to_move;
+    let white_to_move = match side {
+        Color::White => true,
+        Color::Black => false,
+    };
 
     let unoccupied = !(board.white_occupied | board.black_occupied);
 
@@ -382,14 +399,14 @@ pub fn helper_bishop_moves(square: i8, state: &GameState) -> u64 {
 }
 
 
-pub fn queen_moves(square: u64, state: &GameState) -> u64 { // combine bishop&rook moves
+pub fn queen_moves(square: u64, state: &GameState, side: Color) -> u64 { // combine bishop&rook moves
 
-    return rook_moves(square, state) | bishop_moves(square, state);
+    return rook_moves(square, state, side) | bishop_moves(square, state, side);
 
 }
 
 
-pub fn pawn_moves(pos: u64, state: &GameState) ->u64 {
+pub fn pawn_moves(pos: u64, state: &GameState, side: Color) ->u64 {
 
     let mut targeted_squares: u64 = 0u64;
 
@@ -397,27 +414,37 @@ pub fn pawn_moves(pos: u64, state: &GameState) ->u64 {
 
     let unoccupied = !(board.white_occupied | board.black_occupied);
 
-    let en_passant_mask = state.en_passant_mask;
-
-    if state.white_to_move {
-
-        let one_step = (pos << 8) & unoccupied;
-        let two_steps = (((SECOND_RANK << 8) & one_step) << 8) & unoccupied;
-        let capture_left = (board.black_occupied | en_passant_mask) & ((pos&!FILE_A) << 7);
-        let capture_right = (board.black_occupied | en_passant_mask) & ((pos&!FILE_H) << 9);
-
-
-        targeted_squares |= one_step | two_steps | capture_left | capture_right;
-     
+    // Only use en_passant_mask if we're determining the current player's possible moves
+    // Otherwise they could capture their own pawns
+    let en_passant_mask = if state.side_to_move == side {
+        state.en_passant_mask
     } else {
+        0
+    };
 
-        let one_step = (pos >> 8) & unoccupied;
-        let two_steps = (((SEVENTH_RANK >> 8) & one_step) >> 8) & unoccupied;
-        let capture_left = (board.white_occupied | en_passant_mask) & ((pos&!FILE_A) >> 9);
-        let capture_right = (board.white_occupied | en_passant_mask) & ((pos&!FILE_H) >> 7);
+    match side {
 
-        targeted_squares |= one_step | two_steps | capture_left | capture_right;
-        
+        Color::White => {
+
+            let one_step = (pos << 8) & unoccupied;
+            let two_steps = (((SECOND_RANK << 8) & one_step) << 8) & unoccupied;
+            let capture_left = (board.black_occupied | en_passant_mask) & ((pos&!FILE_A) << 7);
+            let capture_right = (board.black_occupied | en_passant_mask) & ((pos&!FILE_H) << 9);
+
+            targeted_squares |= one_step | two_steps | capture_left | capture_right;
+
+        }
+
+        Color::Black => {
+
+            let one_step = (pos >> 8) & unoccupied;
+            let two_steps = (((SEVENTH_RANK >> 8) & one_step) >> 8) & unoccupied;
+            let capture_left = (board.white_occupied | en_passant_mask) & ((pos&!FILE_A) >> 9);
+            let capture_right = (board.white_occupied | en_passant_mask) & ((pos&!FILE_H) >> 7);
+
+            targeted_squares |= one_step | two_steps | capture_left | capture_right;
+
+        }
     };
 
     return targeted_squares;

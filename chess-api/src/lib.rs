@@ -31,19 +31,18 @@ mod tests {
 
     use super::*;
     use crate::state::GameState;
+    use crate::state::Color;
 
     #[test]
     fn test_pawn_moves() {
 
-        let mut state = GameState::new();
+        let state = GameState::new();
 
-        let mut result = legal_moves::pawn_moves(1<<8, &state);
+        let mut result = legal_moves::pawn_moves(1<<8, &state, Color::White);
         assert_eq!(result, 1<<16 | 1<<24);
 
 
-        state.white_to_move = false;
-
-        result = legal_moves::pawn_moves(1<<55, &state);
+        result = legal_moves::pawn_moves(1<<55, &state, Color::Black);
         //dbg_print_board(legal_moves::pawn_moves(1<<55, &state));
         assert_eq!(result, 1<<47 | 1<<39);
 
@@ -56,8 +55,9 @@ mod tests {
     fn test_king_moves() {
 
         let state = GameState::new();
+        let side = state.side_to_move;
 
-        legal_moves::king_moves(1<<30, &state, true);
+        legal_moves::king_moves(1<<30, &state, side, true);
         //dbg_print_board(legal_moves::king_moves(1<<60, &board, 1));
     }
 
@@ -65,11 +65,12 @@ mod tests {
     fn test_knight_moves() {
 
         let state = GameState::new();
+        let side = state.side_to_move;
 
         //legal_moves::knight_moves(1<<16, &state);
-        let result = legal_moves::knight_moves(1<<0, &state); // a1
+        let result = legal_moves::knight_moves(1<<0, &state, side); // a1
         assert_eq!(result, 1<<17);
-        let result = legal_moves::knight_moves(1<<7, &state); // h1
+        let result = legal_moves::knight_moves(1<<7, &state, side); // h1
         assert_eq!(result, 1<<22);
     
     }
@@ -78,7 +79,8 @@ mod tests {
     fn test_rook_moves() {
 
         let state = GameState::new();
-        legal_moves::rook_moves(1<<16, &state);
+        let side = state.side_to_move;
+        legal_moves::rook_moves(1<<16, &state, side);
         //dbg_print_board(legal_moves::rook_moves(1<<24 | 1<<34));
         //dbg_print_board(legal_moves::helper_rook_moves(53, &state));
 
@@ -87,9 +89,10 @@ mod tests {
     #[test]
     fn test_bishop_moves() {
         let state = GameState::new();
-        legal_moves::bishop_moves(1<<0, &state);
-        legal_moves::bishop_moves(1<<8, &state);
-        legal_moves::bishop_moves(1<<63, &state);
+        let side = state.side_to_move;
+        legal_moves::bishop_moves(1<<0, &state, side);
+        legal_moves::bishop_moves(1<<8, &state, side);
+        legal_moves::bishop_moves(1<<63, &state, side);
         //dbg_print_board(legal_moves::bishop_moves(1<<53, &state));
         // dbg_print_board(legal_moves::bishop_moves(1<<28));
     }
@@ -99,7 +102,7 @@ mod tests {
 
         let state = GameState::new();
 
-        legal_moves::queen_moves(1<<16, &state);
+        legal_moves::queen_moves(1<<16, &state, state.side_to_move);
         // dbg_print_board(legal_moves::queen_moves(1<<53, &state));
 
     }
@@ -128,7 +131,7 @@ mod tests {
 
         let state = GameState::new(); // start configuration
 
-        assert_eq!(perform_moves::is_check(&state), false); 
+        assert_eq!(perform_moves::is_check(&state, state.side_to_move), false); 
     }
 
 
@@ -153,10 +156,8 @@ mod tests {
 
         assert_eq!(result, false);
 
-        state.white_to_move = true;
-        assert_eq!(perform_moves::is_check(&state), true);
-        state.white_to_move = false;
-        assert_eq!(perform_moves::is_check(&state), false);
+        assert_eq!(perform_moves::is_check(&state, Color::White), true);
+        assert_eq!(perform_moves::is_check(&state, Color::Black), false);
 
     }
 
@@ -188,7 +189,7 @@ mod tests {
         // dbg_print_board(state.board.white_occupied);
         
 
-        state.white_to_move = true;
+        state.side_to_move = Color::Black;
         assert_eq!(perform_moves::is_checkmate_stalemate(&mut state), true);
 
         // // print board
@@ -292,7 +293,7 @@ mod tests {
         board.black_pawns |= 1<<8; // add pawn to a2
         board.black_occupied |= 1<<8;
         
-        state.white_to_move = false; // black to move
+        state.side_to_move = Color::Black; // black to move
         
         // test if black can promote pawn on a1.
         let move_made = perform_moves::make_move(8, 0, &mut state, true);

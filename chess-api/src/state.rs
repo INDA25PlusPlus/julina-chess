@@ -10,6 +10,25 @@ Allows you to manage the game state cleanly without relying on eg. static mut (t
 
 use crate::bitboards::Board;
 
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum Color {
+    White,
+    Black,
+}
+
+impl Color {
+
+    pub fn opposite(self) -> Color {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+}
+
+
+
 #[derive(Clone)]
 pub struct GameState {
     pub board: Board,
@@ -18,7 +37,7 @@ pub struct GameState {
     pub black_can_castle_kingside: bool,
     pub black_can_castle_queenside: bool,
     pub en_passant_mask: u64, 
-    pub white_to_move: bool,
+    pub side_to_move: Color,
 }
 
 impl GameState {
@@ -30,7 +49,7 @@ impl GameState {
             black_can_castle_kingside: true,
             black_can_castle_queenside: true,
             en_passant_mask: 0,
-            white_to_move: true,
+            side_to_move: Color::White,
         }
     }
 
