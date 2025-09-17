@@ -62,7 +62,7 @@ impl GameState {
 }
 
 
-// Game history taken from: https://rustic-chess.org/board_representation/game_history.html
+// Game history inspired by: https://rustic-chess.org/board_representation/game_history.html
 
 
 pub struct History {

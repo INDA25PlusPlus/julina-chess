@@ -4,24 +4,8 @@ pub mod bitboards;
 pub mod perform_moves;
 pub mod legal_moves;
 pub mod state;
+pub mod visualize;
 
-#[allow(dead_code)] // (only used in tests)
-fn dbg_print_board(bb: u64) { // for debugging and testing
-
-     // print the board
-    /* The first square to be printed should be a8, so we get
-    a8 b8 ... h8
-    a7 b7 ... h7*/ 
-
-    for i in (0..8).rev() { // print top to down
-
-        for j in 0..8 { // print left to right
-            print!("{} ", (bb >> i*8+j) & 1);
-        }
-        print!("{}", "\n\n");
-    }
-    print!("{}", "\n\n");
-}
 
 #[cfg(test)] // kompileras endast när tester körs
 mod tests {
@@ -110,7 +94,7 @@ mod tests {
 
         let state = GameState::new(); // start configuration
 
-        bitboards::print_board(&state.board); // print start config
+        visualize::print_board(&state.board); // print start config
     }
 
     #[test]
@@ -190,7 +174,7 @@ mod tests {
         perform_moves::make_move(21, 53, &mut state, &mut history, true); // Qf3-f7#
         assert_eq!(state.side_to_move, Color::Black);
 
-        bitboards::print_board(&state.board);
+        visualize::print_board(&state.board);
 
         // state.white_to_move = true;
         // dbg_print_board(legal_moves::queen_moves(1<<53, &state));
@@ -314,7 +298,7 @@ mod tests {
         assert_eq!(move_made, true);
 
 
-        bitboards::print_board(&state.board);
+        visualize::print_board(&state.board);
 
     }
     
