@@ -5,7 +5,6 @@ pub mod perform_moves;
 pub mod legal_moves;
 pub mod state;
 
-
 #[allow(dead_code)] // (only used in tests)
 fn dbg_print_board(bb: u64) { // for debugging and testing
 
@@ -23,8 +22,6 @@ fn dbg_print_board(bb: u64) { // for debugging and testing
     }
     print!("{}", "\n\n");
 }
-
-
 
 #[cfg(test)] // kompileras endast när tester körs
 mod tests {

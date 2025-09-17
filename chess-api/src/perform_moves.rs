@@ -9,13 +9,12 @@ use crate::state::GameState;
 use crate::bitboards::Board;
 use crate::state::Color;
 use crate::state::History;
+use std::io::{self, Write}; // take input, got some help from Arvid Kristofferson on how to take input in rust
 
 const SECOND_RANK: u64 = 0b1111111100000000; 
 const SEVENTH_RANK: u64 = 0xFF000000000000;
 const FIRST_RANK: u64 = 0x00000000000000FF;
 const EIGHT_RANK: u64 = 0xFF00000000000000;
-
-use std::io::{self, Write}; // take input, got some help from Arvid Kristofferson on how to take input in rust
 
 pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
 
@@ -32,13 +31,6 @@ pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
         Color::White => true,
         Color::Black => false,
     };
-
-
-    // https://users.rust-lang.org/t/mutex-lock-twice/88414
-    // can't lock Mutex BOARD twice, but since it's also locked in pawn_moves(), bishop_moves() etc.
-    // the lock needs to be dropped before calling these functions
-    // https://users.rust-lang.org/t/when-is-drop-called-on-mutex/6571/2
-
 
     let board = &state.board;
     let mut legal_piece_movement: bool = false;
@@ -96,46 +88,12 @@ pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
         return false;
     }
 
-    // let simulated_state = &mut simulate_make_move(cur_square, target_square, state);
-
-    // if is_check(&simulated_state, side.opposite()) {
-    //     return false; // white king would be in check
-    // }
-
     return true;
 }
-
-// pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) -> GameState{ 
-//     // doesn't actually perform the move, just "pretends" to make the move -> for checks of check, checkmate etc.
-
-//     // this is slow and requires making lots of clones, BUT easier to implement for now.
-//     // Potential improvement: Create an undo_move() that allows you to keep changing the global board, and then reverse the changes if needed.
-
-//     let mut temp_state = state.clone(); // independent copy
-//     let cur_mask = 1 << cur_square;
-//     let target_mask = 1 << target_square;
-
-//     let temp_board = &mut temp_state.board;
-
-//     // if capture
-//     capture(target_mask, temp_board);
-
-//     // add piece to target square
-//     fill_square(cur_mask, target_mask, temp_board);
-
-//      // remove piece from current square
-//     empty_square(cur_mask, temp_board);
-
-
-//     return temp_state;
-// }
-
-
 
 pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, history: &mut History, stop_reset: bool) -> bool{
 
     // stop_reset is set to true during testing
-
     let cur_mask: u64 = 1<<cur_square;
     let target_mask: u64 = 1<<target_square;
 
@@ -146,7 +104,6 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, histo
         print!("{}", "Invalid move.\n");
         return false;
     }
-
 
     // save current state to history
     history.push(state.clone());
@@ -176,7 +133,6 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, histo
     promotion(target_square, state);
 
 
-
     // toggle turn temporarily
     let side = state.side_to_move;
     let opponent = side.opposite();
@@ -193,7 +149,6 @@ pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, histo
 
         return false;
     }
-
 
     // toggle turns
     state.side_to_move = state.side_to_move.opposite(); 
@@ -288,7 +243,6 @@ pub fn capture(target_mask: u64, board: &mut Board) -> Option<i8>{
 
     None
 }
-
 
 pub fn fill_square(cur_mask: u64, target_mask: u64, board: &mut Board) {
 
@@ -663,8 +617,6 @@ pub fn is_checkmate_stalemate(state: &mut GameState) -> bool {
     true
 }
 
-
-
 pub fn undo_move(original_square: i8, new_square: i8, state: &mut GameState, side: Color, piece_captured: Option<i8>) {
 
     let original_mask = 1<<original_square;
@@ -768,7 +720,6 @@ pub fn restore_captured_piece(new_mask: u64, state: &mut GameState, side: Color,
         Some(_) => return,
     }
 }
-
 
 pub fn undo_castle(original_square: i8, new_square: i8, state: &mut GameState) {
 
