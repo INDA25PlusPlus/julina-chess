@@ -91,6 +91,37 @@ pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
     return true;
 }
 
+
+pub fn read_cur_square(square: i8, state: &GameState) -> bool {
+
+    let board = &state.board;
+
+    if square < 0 || square > 63 {
+        return false;
+    }
+
+    let cur_mask = 1 << square;
+
+    match state.side_to_move {
+        Color::White => {
+            if cur_mask & (board.white_pawns | board.white_knights | board.white_bishops
+                       | board.white_rooks | board.white_queens | board.white_king) == 0
+            {
+                return false;
+            }
+        }
+        Color::Black => {
+            if cur_mask & (board.black_pawns | board.black_knights | board.black_bishops
+                       | board.black_rooks | board.black_queens | board.black_king) == 0
+            {
+                return false;
+            } 
+        }
+    }
+
+    true
+}
+
 pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, history: &mut History, stop_reset: bool) -> bool{
 
     // stop_reset is set to true during testing

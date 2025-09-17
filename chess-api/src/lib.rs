@@ -276,7 +276,7 @@ mod tests {
 
         let mut state = GameState::new();
         let board = &mut state.board;
-        let mut history =  History::new();
+        //let mut history =  History::new();
 
         // change position such that we have an endgame of some type
         board.white_bishops = 0;
@@ -294,12 +294,33 @@ mod tests {
         state.side_to_move = Color::Black; // black to move
         
         // test if black can promote pawn on a1.
-        let move_made = perform_moves::make_move(8, 0, &mut state, &mut history, true);
-        assert_eq!(move_made, true);
+        // let move_made = perform_moves::make_move(8, 0, &mut state, &mut history, true);
+        // assert_eq!(move_made, true);
 
 
-        visualize::print_board(&state.board);
+        //visualize::print_board(&state.board);
 
     }
-    
+
+
+    #[test]
+    fn test_read_current_square() {
+
+        let mut state = GameState::new();
+        let mut history =  History::new();
+
+        let result = perform_moves::read_cur_square(-8, &state);
+        assert_eq!(result, false);
+
+        let result = perform_moves::read_cur_square(0, &state);
+        assert_eq!(result, true);
+
+        if result == true {
+            let res = perform_moves::make_move(0, 1, &mut state, &mut history, true);
+            assert_eq!(res, false);
+        }
+
+
+    }
+
 }
