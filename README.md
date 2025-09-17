@@ -40,8 +40,7 @@ Now, you can create a new chess game instance, eg. let state = GameState::new() 
 let history = History::new().
 * Try for examplel visualizing the board in the terminal using visualize::print_board(&state.board)
 
-**Make a move**
-Make a move by calling the function perform_moves::make_move() with parameters:
+**Make a move** by calling the function perform_moves::make_move() with parameters:
 * i8 current_square: Integer in range [0, 63] representing the square that the piece you want to move occupies.
     * 0 = a1, 1 = a2, 2 = a3, etc. (LERF mapping)
 * i8 target_square: Integer in range [0, 63] representing the square that you want to move your piece to.
@@ -97,6 +96,9 @@ A stack of previous GameState instances for undo functionality. Credit to: https
 
 
 ### Move validation
+
+* read_cur_square(square: i8, state: &GameState) -> bool
+Checks if the user pressed a square occupied by a piece of the same color as state.side_to_move Returns `true` if the square contains a piece belonging to `state.side_to_move`. This allows the digital board to enforce separate checks for the selected piece, similar to the behavior on Lichess or Chess.com, where only pieces of the player whose turn it is can be picked for movement.
 
 * is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool
 Checks if a piece can legally move from cur_square to target_square according to piece movement rules, ignoring self-check.
@@ -172,3 +174,5 @@ Returns squares the king can move to via castling if allowed.
 - [The Rust Programming Language](https://doc.rust-lang.org/book/)
 
 - ChatGPT help with documentation and questions
+
+- Lichess analysis board for creating example positions
