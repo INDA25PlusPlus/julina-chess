@@ -107,7 +107,7 @@ pub fn is_legal(cur_square: i8, target_square: i8, state: &GameState) -> bool {
 pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) -> GameState{ 
     // doesn't actually perform the move, just "pretends" to make the move -> for checks of check, checkmate etc.
 
-    // this is slow and requires to make tons of clones, BUT easier to implement for now.
+    // this is slow and requires making lots of clones, BUT easier to implement for now.
     // Potential improvement: Create an undo_move() that allows you to keep changing the global board, and then reverse the changes if needed.
 
     let mut temp_state = state.clone(); // independent copy
@@ -129,27 +129,7 @@ pub fn simulate_make_move(cur_square: i8, target_square: i8, state: &GameState) 
     return temp_state;
 }
 
-pub fn undo_move(original_square: i8, new_square: i8, state: &mut GameState, piece_captured: Option<i8>) {
 
-    let original_mask = 1<<original_square;
-    let new_mask = 1<<new_square;
-
-    // undo castling
-    undo_castle(original_square, new_square, state);
-
-    // empty the new_square
-    empty_square(original_mask, &mut state.board);
-
-    // fill the original square with the piece.
-    fill_square(new_mask, original_mask, &mut state.board);
-
-    // fill square with captured piece
-    undo_capture(new_mask, state, piece_captured);
-    
-
-
-
-}
 
 pub fn make_move(cur_square: i8, target_square: i8, state: &mut GameState, stop_reset: bool) -> bool{
 
@@ -282,90 +262,6 @@ pub fn capture(target_mask: u64, board: &mut Board) -> Option<i8>{
     None
 }
 
-pub fn undo_capture(new_mask: u64, state: &mut GameState, piece_captured: Option<i8>) {
-
-    let board = &mut state.board;
-
-    match piece_captured {
-
-        None => return,
-
-        // pawn was captured
-        Some(1) => {
-
-            match state.side_to_move {
-
-                Color::White => {
-                    board.white_pawns |= new_mask;
-                    board.white_occupied |= new_mask;
-                }
-                Color::Black => {
-                    board.black_pawns |= new_mask;
-                    board.black_occupied |= new_mask;
-                }
-            }
-        }
-        // knight was captured
-        Some(2) => {
-            match state.side_to_move {
-
-                Color::White => {
-                    board.white_knights |= new_mask;
-                    board.white_occupied |= new_mask;
-                }
-                Color::Black => {
-                    board.black_knights |= new_mask;
-                    board.black_occupied |= new_mask;
-                }
-            }
-        }
-        // bishop was captured
-        Some(3) => {
-            match state.side_to_move {
-
-                Color::White => {
-                    board.white_bishops |= new_mask;
-                    board.white_occupied |= new_mask;
-                }
-                Color::Black => {
-                    board.black_bishops |= new_mask;
-                    board.black_occupied |= new_mask;
-                }
-            }
-        }
-
-        // rook was captured
-        Some(4) => {
-            match state.side_to_move {
-
-                Color::White => {
-                    board.white_rooks |= new_mask;
-                    board.white_occupied |= new_mask;
-                }
-                Color::Black => {
-                    board.black_rooks |= new_mask;
-                    board.black_occupied |= new_mask;
-                }
-            }
-        }
-
-        // queen was captured
-        Some(5) => {
-            match state.side_to_move {
-
-                Color::White => {
-                    board.white_queens |= new_mask;
-                    board.white_occupied |= new_mask;
-                }
-                Color::Black => {
-                    board.black_queens |= new_mask;
-                    board.black_occupied |= new_mask;
-                }
-            }
-        }
-        Some(_) => return,
-    }
-}
 
 pub fn fill_square(cur_mask: u64, target_mask: u64, board: &mut Board) {
 
@@ -608,49 +504,6 @@ pub fn castle(cur_square: i8, target_square: i8, state: &mut GameState) {
         }
     }
 }
-
-pub fn undo_castle(original_square: i8, new_square: i8, state: &mut GameState) {
-
-    let new_mask = 1<<new_square;
-
-    let board = &mut state.board;
-
-
-    if new_mask & board.white_king != 0 {
-
-        if original_square == 4 && new_square == 6 { // kingside
-
-            // move rook from f1 to h1
-            board.white_rooks &= !(1<<5);
-            board.white_rooks |= 1<<7;
-        }
-
-        if original_square == 4 && new_square == 2 { // queenside
-
-            // move rook from d1 to a1
-            board.white_rooks &= !(1<<3);
-            board.white_rooks |= 1<<0;
-        }
-    }
-
-    else if new_mask & board.black_king != 0 {
-
-        if original_square == 60 && new_square == 62  {// king-side
-
-            // rook on f8 to h8
-            board.black_rooks &= !(1<<61);
-            state.board.black_rooks |= 1<<63;
-        }
-
-        else if original_square == 60 && new_square == 58 { // queen-side
-
-            // rook on d8 to a8
-            state.board.black_rooks &= !(1<<59);
-            state.board.black_rooks |= 1<<56;
-        }
-    }
-}
-
 
 pub fn update_castling_rights(cur_square: i8, state: &mut GameState) {
 
